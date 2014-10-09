@@ -14,3 +14,6 @@ where
 * `IamAchildID` is the filename prefix of the child to be created
 * `parent1` (optional) for mutation, id of the parent
 * `parent2` (optional), together with parent1 for offspring
+ 
+...generates 2 files in the same directory: `IamAchildID-genotype.xml` and `IamAchildID-vox.vxa`. Both should be moved elsewhere.
+
