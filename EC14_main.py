@@ -14,6 +14,14 @@ import io
 
 #TODO include preprocessing.py somewhere - figure out how to do that: 1. From VoxCad output [difficult] 2. When VoxCad worker processes the individual [easier]
 
+def get_int(msg, default):
+    while True:
+        line = raw_input(msg) or default
+        try:
+            return int(line)
+        except ValueError:
+            print line, "is not a valid number"
+
 def askExperimentName():
     """ asks the user for the experiment name/location
     :return: string Path to the project
@@ -32,11 +40,7 @@ def askPopulationSize():
     """ ask for population size
     :return: integer Population size
     """
-    init_pop_size = raw_input("Initial population size [100]: ")
-    if (init_pop_size == ''):
-        init_pop_size = 100
-    else:
-        init_pop_size = int(init_pop_size)
+    init_pop_size = get_int("Initial population size [100]: ", 100)
     print "Population size set at " + str(init_pop_size)
     return init_pop_size
 
@@ -45,11 +49,7 @@ def askEndTime(): #TODO: this is currently the experiment time, but it should be
     """ ask for max script runtime
     :return: integer Maximum script runtime
     """
-    endtime = raw_input("Experiment time limit (in seconds) [100]: ")
-    if (endtime == ''):
-        endtime = 100
-    else:
-        endtime = int(endtime)
+    endtime = get_int("Experiment time limit (in seconds) [100]: ", 100)
     print "Time limit set at " + str(endtime) + "s"
     return endtime
 
@@ -138,10 +138,4 @@ def kill_subprocesses():
 
 
 # Function to make sure input is an integer
-def get_int(msg):
-    while True:
-        line = raw_input(msg) or 100
-        try:
-            return int(line)
-        except ValueError:
-            print line, "is not a valid number"
+
