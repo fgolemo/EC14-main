@@ -1,6 +1,12 @@
 # Python main script
 from subprocess import Popen
-import os.path, time, glob, shutil
+import os.path, time, glob, shutil, mysql.connector
+
+# import workers
+import hyperneat_worker as hn
+import voxelyze_worker as vox
+import db
+
 import io
 # from threading import Thread # Not necessary, both workers are very light.
 
@@ -34,6 +40,24 @@ def askExperimentName():
 
     exp_path = os.path.expanduser("~/EC14-Exp-" + exp_name + "/")
     return exp_path
+
+
+def askDatabaseString():
+    """ asks the user for the database parameters
+    :return: string A JDBC-formatted string like username:password@host/databasename
+    """
+    db_string = raw_input("Please give me your database connection string in JDBC format (i.e. username:password@host/database): ")
+    working = False
+    while (not working):
+        try:
+            dbo = db.DB(db_string) # ec141:ec141@192.168.0.44/ec141
+            dbo.close()
+            working = True
+        except mysql.connector.Error as err:
+            print (err)
+            db_string = raw_input("That didn't work, please try again (i.e. username:password@host/database): ")
+
+    return db_string
 
 
 def askPopulationSize():
@@ -70,7 +94,7 @@ def askWorkingDir():
 
     # Ask user to specify population .xml file path and making it writable to:
     if db_given in yes:
-        base_path = raw_input("Path to population XML folder (e.g. ~/EC14-Experiment-1):")
+        base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Experiment-1):")
         while not os.path.exists(os.path.expanduser(base_path)):
             base_path = raw_input("I can't find that folder, please try again:")
     else:
@@ -94,48 +118,44 @@ def installFiles(base_path):
 
     files = glob.iglob("./*.py")
     os.makedirs(base_path + "scripts/")
+    os.makedirs(base_path + "config/")
     for file in files:
         if os.path.isfile(file):
             shutil.copy(file, base_path + "scripts/")
+    db_string = askDatabaseString()
+    fo = open(base_path + "config/dbString.txt", "wb")
+    fo.write(db_string)
+    fo.close()
 
 base_path = askWorkingDir()
 end_time = askEndTime()
 pop_size = askPopulationSize()
-quit()
 
 # Call workers
-vox_worker = execfile("voxelize_worker.py")
-hyp_worker = execfile("hyperneat_worker.py")
+hnWorker = hn.HNWorker('HyperNEAT')  # the parameter is just for demo purp
+hnWorker.start()
+voxWorker = vox.VoxWorker('Voxelyze')  # the parameter is just for demo purp
+voxWorker.start()
 
 
 # If there are no individuals to be created or processed and there are no running jobs in lisa, send terminate request to the workers:
-while True:
-    time.sleep(2)  # Delay for 2 seconds
-    count =  4# Number of individuals not yet HNed or virtualized (get from db) #TODO
-    if count == 0:
-        running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
-        if running_proc == 0:
-            vox_worker.terminate()
-            hyp_worker.terminate()
-            print "Done"
-            exit()
+# while True:
+#     time.sleep(2)  # Delay for 2 seconds
+#     count =  4# Number of individuals not yet HNed or virtualized (get from db) #TODO
+#     if count == 0:
+#         running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
+#         if running_proc == 0:
+#             vox_worker.terminate()
+#             hyp_worker.terminate()
+#             print "Done"
+#             exit()
+# this will pause the main script until the user does summin
 
-
-
-
-
-
-
-
-################## Minor Functions ###################
-# Function to call in case the workers need to be stopped ABRUPTLY
-processes = [vox_worker, hyp_worker]
-
-
-def kill_subprocesses():
-    for item in processes:
-        item.kill()
-
-
-# Function to make sure input is an integer
+time.sleep(2)
+print ("main script doing something in the background")
+stop = raw_input("stop? just press enter: ")
+print("user stopped")
+hnWorker.join()
+voxWorker.join()
+print("end of script")
 

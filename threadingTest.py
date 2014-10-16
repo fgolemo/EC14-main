@@ -21,7 +21,7 @@ hnWorker = HyperNEATworker('HyperNEAT') # the parameter is just for demo purp
 hnWorker.start()
 
 #this will pause the main script until the user does summin
-stop = raw_input("stop? insert 'y' and press enter: ") 
+stop = raw_input("stop? insert 'y' and press enter: ")
 #if (stop == "y"):
 print("user stopped")
 hnWorker.join()
