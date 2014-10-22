@@ -1,31 +1,102 @@
-import threading
-
-# import MySQLdb
-# mdb = MySQLdb.connect(...)
-# cur = mdb.cursor()
-#Python script for Voxelize worker... runs until cancelled
-
-voxelize_queue = []
-waiting_time = 0
-queue_length = 12
-max_waiting_time = 60 * 60 # 60seconds * 60min = 1 hour in seconds
-
+import threading, time
 
 class VoxWorker(threading.Thread):
-    def __init__(self, param):
+    """ Python script for Voxelize worker... runs until cancelled or till max waiting time
+    """
+
+    voxelize_queue = []
+    pause_time = 2
+    queue_length = 12
+    queue = []
+    max_waiting_time = 60 * 60 # 60seconds * 60min = 1 hour in seconds
+    base_path = ""
+    debug = False
+
+    def __init__(self, base_path, debug = False):
         threading.Thread.__init__(self)
-        self.param = param  # just for demo purposes
+        self.base_path = base_path
+        self.debug = debug
         self.stopRequest = threading.Event()
 
     def run(self):
-        while (not self.stopRequest.isSet()):
-            print("Thread: checking for {} stuff in the background".format(self.param))
-            self.stopRequest.wait(2)
+        """ main thread function
+        :return: None
+        """
+        waitCounter = 0
+        startTime = time.time()
+        while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
+            todos = self.checkForTodos()
+
+            if (len(todos) > 0):
+                if (self.debug):
+                    print("VOX: found "+str(len(todos))+" todos")
+                self.addToQueue(todos)
+                waitCounter = 0
+            else:
+                if (self.debug):
+                    print("VOX: found nothing")
+                waitCounter += time.time() - startTime
+                startTime = time.time()
+
+            if (self.debug):
+                print("VOX: sleeping now for "+str(self.pause_time)+"s")
+            self.stopRequest.wait(self.pause_time)
+
+        #TODO: final steps after kill signal
         print ("Thread: got exist signal... here I can do some last cleanup stuff before quitting")
 
     def join(self, timeout=None):
+        """ function to terminate the thread (softly)
+        :param timeout: not implemented yet
+        :return: None
+        """
+        if (self.debug):
+            print("VOX: got kill request for thread")
         self.stopRequest.set()
         super(VoxWorker, self).join(timeout)
+
+    def addToQueue(self, todos):
+        """ adds elements to the to-be-voxelyzed queue
+        :param todos: simple python list with the names of the individuals to be voxelyzed
+        :return: None
+        """
+        if (self.debug):
+            print ("VOX: found "+str(len(todos))+ " new individuals.")
+        self.queue += todos
+
+        if (len(self.queue) > self.queue_length):
+            if (self.debug):
+                print ("vox: got "+str(self.queue_length)+" individuals in queue. Sending them to the Lisa queue to be voxelyzed")
+            self.sendQueue(self.queue[:self.queue_length])
+            self.queue = self.queue[self.queue_length:] # keep only the first N elements in list
+        else:
+            if (self.debug):
+                print("VOX: queue not full yet, waiting for more before submitting")
+            pass
+        if (self.debug):
+            print("VOX: current queue:")
+            print(self.queue)
+
+    def checkForTodos(self):
+        """ check the DB or the filesystem and look if there are any new individuals that need to be voxelyzed
+        :return: simple python list with the names of the individuals that are new and need to be voxelyzed
+        """
+        #TODO: implement, first pseudo - to be testable on any machine
+        if (self.debug):
+            print("VOX: checking for TODOs")
+
+        return []
+
+    def sendQueue(self, sendList):
+        """ submits the queue (or part of it) to the Lisa job queue
+        :param sendList: simple python list with the names of the individuals to be voxelyzed right now
+        :return: None
+        """
+        #TODO: implement, first pseudp - to be testable on any machine
+        if (self.debug):
+            print("VOX: sending queue to the job system")
+        pass
+
 
 
 # while True:

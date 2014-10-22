@@ -1,6 +1,6 @@
 # Python main script
 from subprocess import Popen
-import os.path, time, glob, shutil, mysql.connector
+import os.path, time, glob, shutil, mysql.connector, ConfigParser
 
 # import workers
 import hyperneat_worker as hn
@@ -94,12 +94,13 @@ def askWorkingDir():
 
     # Ask user to specify population .xml file path and making it writable to:
     if db_given in yes:
-        base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Experiment-1):")
+        base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Exp-1):")
         while not os.path.exists(os.path.expanduser(base_path)):
             base_path = raw_input("I can't find that folder, please try again:")
     else:
         # If starting a new experiment, initialise population, empty database and copy the scripts:
         base_path = askExperimentName()
+
         pop_path = base_path + "population/"
         if not os.path.exists(pop_path):
             os.makedirs(pop_path)
@@ -112,7 +113,7 @@ def askWorkingDir():
 
 
 def installFiles(base_path):
-    """ Copy script files into experiment directory
+    """ Copy script files into experiment directory and saves config
     :return: void
     """
 
@@ -122,19 +123,27 @@ def installFiles(base_path):
     for file in files:
         if os.path.isfile(file):
             shutil.copy(file, base_path + "scripts/")
+
     db_string = askDatabaseString()
-    fo = open(base_path + "config/dbString.txt", "wb")
-    fo.write(db_string)
-    fo.close()
+    end_time = askEndTime()
+    pop_size = askPopulationSize()
+
+    config = ConfigParser.RawConfigParser()
+    config.add_section('DB')
+    config.set('DB', 'db_string', db_string)
+    config.add_section('Experiment')
+    config.set('Experiment', 'end_time', str(end_time))
+    config.set('Experiment', 'pop_size', str(pop_size))
+    with open(base_path + 'config/config.ini', 'wb') as configfile:
+        config.write(configfile)
+
 
 base_path = askWorkingDir()
-end_time = askEndTime()
-pop_size = askPopulationSize()
 
 # Call workers
-hnWorker = hn.HNWorker('HyperNEAT')  # the parameter is just for demo purp
+hnWorker = hn.HNWorker('HyperNEAT', base_path)  # the parameter is just for demo purp
 hnWorker.start()
-voxWorker = vox.VoxWorker('Voxelyze')  # the parameter is just for demo purp
+voxWorker = vox.VoxWorker('Voxelyze', base_path)  # the parameter is just for demo purp
 voxWorker.start()
 
 
@@ -153,7 +162,7 @@ voxWorker.start()
 
 time.sleep(2)
 print ("main script doing something in the background")
-stop = raw_input("stop? just press enter: ")
+stop = raw_input("want to stop? just press enter: ")
 print("user stopped")
 hnWorker.join()
 voxWorker.join()
