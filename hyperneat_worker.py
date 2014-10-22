@@ -7,11 +7,17 @@ class HNWorker(threading.Thread):
     pause_time = 2
     max_waiting_time = 60 * 60 # 60seconds * 60min = 1 hour in seconds
     base_path = ""
+    pop_path = "population/"
+    hn_path = "bin/"
+    hn_binary = "HyperNEAT"
     debug = False
 
     def __init__(self, base_path, debug = False):
         threading.Thread.__init__(self)
         self.base_path = base_path
+        
+        # individuals will be found here: self.base_path + self.pop_path + str(indiv)
+        
         self.debug = debug
         self.stopRequest = threading.Event()
 
@@ -30,7 +36,6 @@ class HNWorker(threading.Thread):
                 self.execHN(todos)
                 self.cleanupAfterHN(todos)
                 self.preprocessBeforeVox(todos)
-                self.saveToDB(todos)
                 waitCounter = 0
             else:
                 if (self.debug):
@@ -60,9 +65,8 @@ class HNWorker(threading.Thread):
         """ check the DB or the filesystem and look if there are any new individuals that need to be hyperneated
         :return: simple python list with the names of the individuals that are new and need to be hyperneated
         """
-        todos = []
+        todos = db.getHNtodos()
         
-        #TODO: implement, first pseudo - to be testable on any machine
         if (self.debug):
             print("HN: checking for todos")
 
@@ -73,7 +77,13 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals to be hyperneated
         :return: None
         """
-        #TODO: implement, first pseudo - to be testable on any machine
+        for indiv in todos:
+            parents = db.getParents(indiv) #parent will be a list of size 0|1|2
+            #TODO: run hyperneat here with popen, depending on list len
+            if len(parents) == 0:
+                
+            
+            #TODO (later): error check the hyperneat output
         if (self.debug):
             print("HN: executing hyperneat for the following individuals:")
             print(todos)
@@ -84,7 +94,9 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
         """
-        #TODO: implement
+        #TODO: run the real hyperneat on lisa, list all the stray files that HN generates
+        #TODO: and here write a few lines to clean them up (i.e. just delete unused HN-generated files)
+        # probably the todos parameter is not necessary, but keep it for now
         if (self.debug):
             print("HN: cleaning up")
         pass
@@ -95,21 +107,27 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
         """
-        #TODO: implement
+        for indiv in todos:
+            #TODO: move the final files somewhere else
+            db.markAsHyperneated(indiv)
         if (self.debug):
             print("HN: preprocessing")
         pass
+        
+    def runHN(self,hn_params):
+        """ run hyperneat with its parameters
+        :param hn_params:
+        :return: error code
+        """
+    
+        run_hyperneat = subprocess.check_call([self.hn_binary,hn_params],cwd=self.base_path + self.hn_path,shell=True)  # Double check this, may brick the whole thing
+        
+        if (run_hyperneat.returncode != 0):
+            print ("HN: during HN execution there was an error:")
+            print (str(run_hyperneat.returncode))
+            quit() #TODO: better error handling, but so far, we dont HN to fail
 
-    def saveToDB(self, todos):
-        '''
-         write all the freshly-generated individuals'names to DB for further procesing
-        :param todos: list with strings containing the names of the individuals from the last HN run
-        :return: None
-        '''
-        #TODO: implement
-        if (self.debug):
-            print("HN: saving to DB")
-        pass
+
 
 # Function keeps checking database for new encounters:
 
@@ -126,22 +144,9 @@ class HNWorker(threading.Thread):
 #         spawn_child()
 	
 
-################# FUNCTIONS ####################
+
 	
     
-# def spawn_child()
-# #SH#
-# for ind in parents:
-#
-#     run_hyperneat = Popen("gsub hn",cwd="./HyperNeat",stdin=subprocess.PIPE,stdout=subprocess.PIPE,shell=True)  # Double check this, may brick the whole thing
-#         run_hyperneat.STDIN("./"+str(exp_name)+"/"+str(firstID)+" ./"+str(exp_name)+"/"+str(secondID))
-#
-#         if (run_hyperneat.returncode != 0):
-# 		    print run_hyperneat.returncode
-# 			    run_hyperneat.kill()
-#         else:
-#             with io.open(pop_path, str(ChildID) + ".xml", 'w', encoding='utf-8') as f:
-#                 f.write(str(run_hyperneat.STDOUT()))
-#                 io.close()
+
 
 

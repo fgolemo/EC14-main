@@ -81,18 +81,22 @@ class VoxWorker(threading.Thread):
         """ check the DB or the filesystem and look if there are any new individuals that need to be voxelyzed
         :return: simple python list with the names of the individuals that are new and need to be voxelyzed
         """
-        #TODO: implement, first pseudo - to be testable on any machine
+        todos = db.getVoxTodos()
+        
         if (self.debug):
             print("VOX: checking for TODOs")
 
-        return []
+        return todos
 
     def sendQueue(self, sendList):
         """ submits the queue (or part of it) to the Lisa job queue
         :param sendList: simple python list with the names of the individuals to be voxelyzed right now
         :return: None
         """
-        #TODO: implement, first pseudp - to be testable on any machine
+        #TODO: write pool file (12 lines, each line is a call to voxelyze)
+        #TODO: run stopos/ submit.sh / everts script that qsubs the stuff in the pool
+        #TODO: mark all those individuals in the DB as submitted
+        
         if (self.debug):
             print("VOX: sending queue to the job system")
         pass
