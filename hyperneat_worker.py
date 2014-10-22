@@ -1,4 +1,5 @@
-import threading, time
+from subprocess import CalledProcessError
+import threading, time, subprocess
 
 class HNWorker(threading.Thread):
     """ Thread for HyperNEAT worker... runs until cancelled or till max waiting time
@@ -119,12 +120,11 @@ class HNWorker(threading.Thread):
         :param hn_params:
         :return: error code
         """
-    
-        run_hyperneat = subprocess.check_call([self.hn_binary,hn_params],cwd=self.base_path + self.hn_path,shell=True)  # Double check this, may brick the whole thing
-        
-        if (run_hyperneat.returncode != 0):
+        try:
+            subprocess.check_call([self.hn_binary,hn_params],cwd=self.base_path + self.hn_path,shell=True)  # Double check this, may brick the whole thing
+        except CalledProcessError as e:
             print ("HN: during HN execution there was an error:")
-            print (str(run_hyperneat.returncode))
+            print (str(e.returncode))
             quit() #TODO: better error handling, but so far, we dont HN to fail
 
 
