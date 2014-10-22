@@ -18,8 +18,6 @@ import io
 # import CloseRobotsArena.py
 # import CloseRobots.py
 
-#TODO include preprocessing.py somewhere - figure out how to do that: 1. From VoxCad output [difficult] 2. When VoxCad worker processes the individual [easier]
-
 def get_int(msg, default):
     while True:
         line = raw_input(msg) or default
@@ -141,9 +139,9 @@ def installFiles(base_path):
 base_path = askWorkingDir()
 
 # Call workers
-hnWorker = hn.HNWorker('HyperNEAT', base_path)  # the parameter is just for demo purp
+hnWorker = hn.HNWorker(base_path)
 hnWorker.start()
-voxWorker = vox.VoxWorker('Voxelyze', base_path)  # the parameter is just for demo purp
+voxWorker = vox.VoxWorker(base_path)
 voxWorker.start()
 
 

@@ -60,11 +60,13 @@ class HNWorker(threading.Thread):
         """ check the DB or the filesystem and look if there are any new individuals that need to be hyperneated
         :return: simple python list with the names of the individuals that are new and need to be hyperneated
         """
+        todos = []
+        
         #TODO: implement, first pseudo - to be testable on any machine
         if (self.debug):
             print("HN: checking for todos")
 
-        return []
+        return todos
 
     def execHN(self, todos):
         """ execute HyperNEAT for all the individuals in the input list
@@ -99,10 +101,11 @@ class HNWorker(threading.Thread):
         pass
 
     def saveToDB(self, todos):
-        """ write all the freshly-generated individuals'names to DB for further procesing
+        '''
+         write all the freshly-generated individuals'names to DB for further procesing
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
-        """
+        '''
         #TODO: implement
         if (self.debug):
             print("HN: saving to DB")
