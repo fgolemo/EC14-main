@@ -103,8 +103,8 @@ def askWorkingDir():
         if not os.path.exists(pop_path):
             os.makedirs(pop_path)
         installFiles(base_path)
-        # create_init_population() //TODO
         # CreateTables() //TODO
+        # create_init_population() //TODO
 
     print "Working directory: " + base_path
     return base_path
