@@ -1,6 +1,6 @@
 import threading
 
-class HyperNEATworker(threading.Thread):
+class HyperNEATworkerTest(threading.Thread):
 
     def __init__(self, param):
         threading.Thread.__init__(self)
@@ -15,9 +15,9 @@ class HyperNEATworker(threading.Thread):
 
     def join(self, timeout=None):
         self.stopRequest.set()
-        super(HyperNEATworker, self).join(timeout)
+        super(HyperNEATworkerTest, self).join(timeout)
 
-hnWorker = HyperNEATworker('HyperNEAT') # the parameter is just for demo purp
+hnWorker = HyperNEATworkerTest('HyperNEAT') # the parameter is just for demo purp
 hnWorker.start()
 
 #this will pause the main script until the user does summin

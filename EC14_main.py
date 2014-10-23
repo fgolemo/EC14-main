@@ -5,7 +5,6 @@ import os.path, time, glob, shutil, mysql.connector, ConfigParser
 # import workers
 from db import DB
 import hyperneat_worker as hn
-from threadingTest import hnWorker
 import voxelyze_worker as vox
 import postprocessing_worker as pp
 
@@ -54,7 +53,7 @@ class EC14controller():
         working = False
         while (not working):
             try:
-                dbo = db.DB(db_string)  # ec141:ec141@192.168.0.44/ec141
+                dbo = DB(db_string)  # ec141:ec141@192.168.0.44/ec141
                 dbo.close()
                 working = True
             except mysql.connector.Error as err:
@@ -92,7 +91,7 @@ class EC14controller():
         no = {'no', 'n', ''}
 
         # Ask user if they are continuing a previous experiment
-        db_given = raw_input("Are you continuing with an existing database? [y/N]: ")
+        db_given = raw_input("Are you continuing with an existing Experiment? [y/N]: ")
         while db_given not in yes and db_given not in no:
             print "That is not a valid answer.",
             db_given = raw_input("Are you continuing with an existing database (type Y for yes and N for no)? ").lower()
