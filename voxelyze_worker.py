@@ -1,5 +1,6 @@
 import threading, time
 
+
 class VoxWorker(threading.Thread):
     """ Python script for Voxelize worker... runs until cancelled or till max waiting time
     """
@@ -8,14 +9,16 @@ class VoxWorker(threading.Thread):
     pause_time = 2
     queue_length = 12
     queue = []
-    max_waiting_time = 60 * 60 # 60seconds * 60min = 1 hour in seconds
+    max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
     debug = False
+    db = None
 
-    def __init__(self, base_path, debug = False):
+    def __init__(self, db, base_path, debug=False):
         threading.Thread.__init__(self)
         self.base_path = base_path
         self.debug = debug
+        self.db = db
         self.stopRequest = threading.Event()
 
     def run(self):
@@ -29,7 +32,7 @@ class VoxWorker(threading.Thread):
 
             if (len(todos) > 0):
                 if (self.debug):
-                    print("VOX: found "+str(len(todos))+" todos")
+                    print("VOX: found " + str(len(todos)) + " todos")
                 self.addToQueue(todos)
                 waitCounter = 0
             else:
@@ -39,10 +42,10 @@ class VoxWorker(threading.Thread):
                 startTime = time.time()
 
             if (self.debug):
-                print("VOX: sleeping now for "+str(self.pause_time)+"s")
+                print("VOX: sleeping now for " + str(self.pause_time) + "s")
             self.stopRequest.wait(self.pause_time)
 
-        #TODO: final steps after kill signal
+        # TODO: final steps after kill signal
         print ("Thread: got exist signal... here I can do some last cleanup stuff before quitting")
 
     def join(self, timeout=None):
@@ -61,14 +64,15 @@ class VoxWorker(threading.Thread):
         :return: None
         """
         if (self.debug):
-            print ("VOX: found "+str(len(todos))+ " new individuals.")
+            print ("VOX: found " + str(len(todos)) + " new individuals.")
         self.queue += todos
 
         if (len(self.queue) > self.queue_length):
             if (self.debug):
-                print ("vox: got "+str(self.queue_length)+" individuals in queue. Sending them to the Lisa queue to be voxelyzed")
+                print ("vox: got " + str(
+                    self.queue_length) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
             self.sendQueue(self.queue[:self.queue_length])
-            self.queue = self.queue[self.queue_length:] # keep only the first N elements in list
+            self.queue = self.queue[self.queue_length:]  # keep only the first N elements in list
         else:
             if (self.debug):
                 print("VOX: queue not full yet, waiting for more before submitting")
@@ -81,8 +85,8 @@ class VoxWorker(threading.Thread):
         """ check the DB or the filesystem and look if there are any new individuals that need to be voxelyzed
         :return: simple python list with the names of the individuals that are new and need to be voxelyzed
         """
-        todos = db.getVoxTodos()
-        
+        todos = self.db.getVoxTodos()
+
         if (self.debug):
             print("VOX: checking for TODOs")
 
@@ -93,19 +97,18 @@ class VoxWorker(threading.Thread):
         :param sendList: simple python list with the names of the individuals to be voxelyzed right now
         :return: None
         """
-        #TODO: write pool file (12 lines, each line is a call to voxelyze)
+        # TODO: write pool file (12 lines, each line is a call to voxelyze)
         #TODO: run stopos/ submit.sh / everts script that qsubs the stuff in the pool
         #TODO: mark all those individuals in the DB as submitted
-        
+
         if (self.debug):
             print("VOX: sending queue to the job system")
         pass
 
 
-
 # while True:
 #
-#     GetNextChildren(endtime) #gives back array/tuple with
+# GetNextChildren(endtime) #gives back array/tuple with
 #     #ID, birthTime, hasBeenSimulated = 0, hasBeenProcessed = 0, hasBeenHNed = 0
 #
 # 	if GetNextChildren(endtime) == NULL:
