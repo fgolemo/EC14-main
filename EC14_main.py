@@ -17,6 +17,20 @@ class EC14controller():
     voxWorker = None
     ppWorker = None
     newExperiment = False
+    end_time = 0
+    pop_size = 0
+    pop_random = 0
+    pop_random_start_end = (0, 0)
+    indiv_max_age = 0
+    config = None
+
+    yes = {'yes', 'y', 'ye'}
+    no = {'no', 'n', ''}
+
+
+    def __init__(self):
+        self.config = ConfigParser.RawConfigParser()
+
 
     def get_int(self, msg, default):
         while True:
@@ -77,9 +91,20 @@ class EC14controller():
         """ ask for max script runtime
         :return: integer Maximum script runtime
         """
+
         endtime = self.get_int("Experiment time limit (in seconds) [100]: ", 100)
         print "Time limit set at " + str(endtime) + "s"
         return endtime
+
+
+    def askMaxAge(self):
+        """ ask for max age of each individual in seconds
+        :return: integer seconds
+        """
+
+        age = self.get_int("Lifetime of an individual (in seconds) [50]: ", 50)
+        print "Individual max age set at " + str(age) + "s"
+        return age
 
 
     def askWorkingDir(self):
@@ -87,17 +112,14 @@ class EC14controller():
         :return: None
         """
 
-        yes = {'yes', 'y', 'ye'}
-        no = {'no', 'n', ''}
-
         # Ask user if they are continuing a previous experiment
-        db_given = raw_input("Are you continuing with an existing Experiment? [y/N]: ")
-        while db_given not in yes and db_given not in no:
+        db_given = raw_input("Are you continuing with an existing Experiment? [y/N]: ").lower()
+        while db_given not in self.yes and db_given not in self.no:
             print "That is not a valid answer.",
             db_given = raw_input("Are you continuing with an existing database (type Y for yes and N for no)? ").lower()
 
         # Ask user to specify population .xml file path and making it writable to:
-        if db_given in yes:
+        if db_given in self.yes:
             base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Exp-1):")
             while not os.path.exists(os.path.expanduser(base_path)):
                 base_path = raw_input("I can't find that folder, please try again:")
@@ -130,17 +152,54 @@ class EC14controller():
 
         db_string = self.askDatabaseString()
         self.dbString = db_string
-        end_time = self.askEndTime()
-        pop_size = self.askPopulationSize()
+        self.end_time = self.askEndTime()
+        self.indiv_max_age = self.askMaxAge()
+        self.pop_size = self.askPopulationSize()
+        self.pop_random = self.askPopulationRandom()
+        self.pop_random_start_end = (0, 0)
+        if (self.pop_random):
+            self.pop_random_start_end = self.askPopulationRandomStartEnd()
 
-        config = ConfigParser.RawConfigParser()
-        config.add_section('DB')
-        config.set('DB', 'db_string', db_string)
-        config.add_section('Experiment')
-        config.set('Experiment', 'end_time', str(end_time))
-        config.set('Experiment', 'pop_size', str(pop_size))
+        self.config.add_section('DB')
+        self.config.set('DB', 'db_string', db_string)
+        self.config.add_section('Experiment')
+        self.config.set('Experiment', 'end_time', str(self.end_time))
+        self.config.set('Experiment', 'indiv_max_age', str(self.indiv_max_age))
+        self.config.set('Experiment', 'pop_size', str(self.pop_size))
+        self.config.set('Experiment', 'pop_random', str(self.pop_random))
+        self.config.set('Experiment', 'pop_random_start', str(self.pop_random_start_end[0]))
+        self.config.set('Experiment', 'pop_random_end', str(self.pop_random_start_end[1]))
         with open(self.base_path + 'config/config.ini', 'wb') as configfile:
-            config.write(configfile)
+            self.config.write(configfile)
+
+    def askPopulationRandom(self):
+        """ ask if the initial population should have randomized birth time
+        :return: boolean True for random, False for all will be born at time 0.000s
+        """
+
+        question = "Do you want the individuals to have random birth time within a time window? [y/N]: "
+
+        birth_random = raw_input(question).lower()
+        while birth_random not in self.yes and birth_random not in self.no:
+            print "That is not a valid answer. Please give it another shot...",
+            birth_random = raw_input(question).lower()
+
+        if birth_random in self.yes:
+            return True
+        else:
+            return False
+
+    def askPopulationRandomStartEnd(self):
+        """ ask for start and end of the random population birth time
+        :return: tuple, first val is start, second is end in integer seconds
+        """
+
+        starttime = self.get_int("Earliest possible birth time (in seconds) [0]: ", 0)
+        endtime = self.get_int("Latest possible birth time (in seconds) [10]: ", 10)
+
+        print "Birth time random window set to " + str(starttime) + " - " + str(endtime) + "s"
+
+        return (starttime, endtime)
 
 
     def getDB(self):
@@ -148,12 +207,7 @@ class EC14controller():
         :return: None
         """
 
-        if (self.dbString == ""): # this is the case, when the experiment exists
-            config = ConfigParser.RawConfigParser()
-            config.read(self.base_path + 'config/config.ini')
-            self.dbString = config.getfloat('DB', 'db_string')
-
-        self.db = DB(self.dbString)
+        self.db = DB(self.dbString, self.end_time, self.indiv_max_age)
 
         if (self.newExperiment):
             self.db.createTables()
@@ -162,8 +216,24 @@ class EC14controller():
         """ creates the initial population in the database
         :return: None
         """
-        #TODO: implement
-        pass
+
+
+        print("generating init population")
+        quit()
+
+    def readConfig(self):
+        self.config.read(self.base_path + 'config/config.ini')
+
+        if (self.pop_size == ""):  # this is the case, when the experiment exists
+            self.end_time = self.config.getfloat('Experiment', 'end_time')
+            self.indiv_max_age = self.config.getfloat('Experiment', 'indiv_max_age')
+            self.pop_size = self.config.getfloat('Experiment', 'pop_size')
+            self.pop_random = self.config.getfloat('Experiment', 'pop_random')
+            self.pop_random_start_end = (self.config.getfloat('Experiment', 'pop_random_stat'),self.config.getfloat('Experiment', 'pop_random_end'))
+
+        if (self.dbString == ""):  # this is the case, when the experiment exists
+            self.dbString = self.config.getfloat('DB', 'db_string')
+
 
     def start(self):
         self.askWorkingDir()
@@ -171,9 +241,13 @@ class EC14controller():
         if (self.newExperiment):
             self.installFiles()
             self.installConfig()
+
+        self.readConfig()
+        self.getDB()
+
+        if (self.newExperiment):
             self.createPopulaton()
 
-        self.getDB()
 
         # launch workers
         self.hnWorker = hn.HNWorker(self.db, self.base_path, True)
