@@ -1,4 +1,5 @@
 # Python main script
+import random
 from subprocess import Popen
 import os.path, time, glob, shutil, mysql.connector, ConfigParser
 
@@ -22,7 +23,12 @@ class EC14controller():
     pop_random = 0
     pop_random_start_end = (0, 0)
     indiv_max_age = 0
+    arena_x = 0
+    arena_y = 0
+    arena_type = ""
     config = None
+
+    random_granularity = 10.0
 
     yes = {'yes', 'y', 'ye'}
     no = {'no', 'n', ''}
@@ -76,6 +82,13 @@ class EC14controller():
 
         return db_string
 
+    def askNumber(self, question, defaultVal):
+        """ ask for input (expects an integer number)
+        :return: an integer number
+        """
+        input = self.get_int(question + " [" + str(defaultVal) + "]: ", defaultVal)
+        print "okay, I got: " + str(input)
+        return input
 
     def askPopulationSize(self):
         """ ask for population size
@@ -85,27 +98,6 @@ class EC14controller():
         init_pop_size = self.get_int("Initial population size [100]: ", 100)
         print "Population size set at " + str(init_pop_size)
         return init_pop_size
-
-
-    def askEndTime(self):  # TODO: this is currently the experiment time, but it should be the in-simulation time
-        """ ask for max script runtime
-        :return: integer Maximum script runtime
-        """
-
-        endtime = self.get_int("Experiment time limit (in seconds) [100]: ", 100)
-        print "Time limit set at " + str(endtime) + "s"
-        return endtime
-
-
-    def askMaxAge(self):
-        """ ask for max age of each individual in seconds
-        :return: integer seconds
-        """
-
-        age = self.get_int("Lifetime of an individual (in seconds) [50]: ", 50)
-        print "Individual max age set at " + str(age) + "s"
-        return age
-
 
     def askWorkingDir(self):
         """ aks the user if there are existing files for this experiment
@@ -152,13 +144,16 @@ class EC14controller():
 
         db_string = self.askDatabaseString()
         self.dbString = db_string
-        self.end_time = self.askEndTime()
-        self.indiv_max_age = self.askMaxAge()
-        self.pop_size = self.askPopulationSize()
+        self.end_time = self.askNumber("Experiment time limit (in seconds)", 120)
+        self.indiv_max_age = self.askNumber("Lifetime of an individual (in seconds)", 50)
+        self.pop_size = self.askNumber("Initial population size", 100)
         self.pop_random = self.askPopulationRandom()
         self.pop_random_start_end = (0, 0)
         if (self.pop_random):
             self.pop_random_start_end = self.askPopulationRandomStartEnd()
+        self.arena_x = self.askNumber("Arena size (x)", 5)
+        self.arena_y = self.askNumber("Arena size (y)", 5)
+        self.arena_type = self.askArenaType()
 
         self.config.add_section('DB')
         self.config.set('DB', 'db_string', db_string)
@@ -169,6 +164,10 @@ class EC14controller():
         self.config.set('Experiment', 'pop_random', str(self.pop_random))
         self.config.set('Experiment', 'pop_random_start', str(self.pop_random_start_end[0]))
         self.config.set('Experiment', 'pop_random_end', str(self.pop_random_start_end[1]))
+        self.config.add_section('Arena')
+        self.config.set('Arena', 'arena_x', str(self.arena_x))
+        self.config.set('Arena', 'arena_y', str(self.arena_y))
+        self.config.set('Arena', 'arena_type', str(self.arena_type))
         with open(self.base_path + 'config/config.ini', 'wb') as configfile:
             self.config.write(configfile)
 
@@ -188,6 +187,21 @@ class EC14controller():
             return True
         else:
             return False
+
+    def askArenaType(self):
+        """ ask if arena edges should be bouncy (reflecting) or infinite (when leaving the edge on one end, appear on the other end)
+        :return: string (character), either b - for bouncy, or i - for infinite
+        """
+
+        question = "Do you want the arena to be bouncy or infinite? [b/I]: "
+
+        ans = raw_input(question).lower()
+        while ans not in ["b", "i", ""]:
+            print "That is not a valid answer. Please respond with either the letter 'b' or 'i'",
+            ans = raw_input(question).lower()
+        if (ans == ''):
+            ans = 'i'
+        return ans
 
     def askPopulationRandomStartEnd(self):
         """ ask for start and end of the random population birth time
@@ -217,19 +231,30 @@ class EC14controller():
         :return: None
         """
 
+        for i in range(self.pop_size):
+            birth = 0
+            if (self.pop_random):
+                birth = (random.randrange(self.pop_random_start_end[0] * self.random_granularity,
+                                          self.pop_random_start_end[1] * self.random_granularity)
+                         / self.random_granularity)
+            x = random.randrange(0, self.arena_x * self.random_granularity) / self.random_granularity
+            y = random.randrange(0, self.arena_y * self.random_granularity) / self.random_granularity
+            self.db.createIndividual(birth, x, y)
 
-        print("generating init population")
-        quit()
 
     def readConfig(self):
         self.config.read(self.base_path + 'config/config.ini')
 
         if (self.pop_size == ""):  # this is the case, when the experiment exists
+            self.arena_x = self.config.getfloat('Arena', 'arena_x')
+            self.arena_y = self.config.getfloat('Arena', 'arena_y')
+            self.arena_type = self.config.getfloat('Arena', 'arena_type')
             self.end_time = self.config.getfloat('Experiment', 'end_time')
             self.indiv_max_age = self.config.getfloat('Experiment', 'indiv_max_age')
             self.pop_size = self.config.getfloat('Experiment', 'pop_size')
             self.pop_random = self.config.getfloat('Experiment', 'pop_random')
-            self.pop_random_start_end = (self.config.getfloat('Experiment', 'pop_random_stat'),self.config.getfloat('Experiment', 'pop_random_end'))
+            self.pop_random_start_end = (
+            self.config.getfloat('Experiment', 'pop_random_stat'), self.config.getfloat('Experiment', 'pop_random_end'))
 
         if (self.dbString == ""):  # this is the case, when the experiment exists
             self.dbString = self.config.getfloat('DB', 'db_string')
@@ -258,18 +283,18 @@ class EC14controller():
         self.ppWorker.start()
 
 
-    # If there are no individuals to be created or processed and there are no running jobs in lisa, send terminate request to the workers:
-    # while True:
-    # time.sleep(2)  # Delay for 2 seconds
-    #     count =  4# Number of individuals not yet HNed or virtualized (get from db) #TODO
-    #     if count == 0:
-    #         running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
-    #         if running_proc == 0:
-    #             vox_worker.terminate()
-    #             hyp_worker.terminate()
-    #             print "Done"
-    #             exit()
-    # this will pause the main script until the user does summin
+        # If there are no individuals to be created or processed and there are no running jobs in lisa, send terminate request to the workers:
+        # while True:
+        # time.sleep(2)  # Delay for 2 seconds
+        # count =  4# Number of individuals not yet HNed or virtualized (get from db) #TODO
+        #     if count == 0:
+        #         running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
+        #         if running_proc == 0:
+        #             vox_worker.terminate()
+        #             hyp_worker.terminate()
+        #             print "Done"
+        #             exit()
+        # this will pause the main script until the user does summin
 
 
 ctrl = EC14controller()

@@ -6,6 +6,9 @@ class DB():
     con = False
     maxSimTime = 0
     maxAge = 0
+    keys_individuals = []
+    keys_traces = []
+    keys_offspring = []
 
     def __init__(self, connectionString, maxSimTime=0, maxAge=0):
         self.maxSimTime = maxSimTime
@@ -31,7 +34,7 @@ class DB():
         }
 
         self.con = mysql.connector.connect(**config)
-        self.cur = self.con.cursor()
+        self.cur = self.con.cursor(dictionary=True)
 
     def test(self):
         # TODO: test db connection
@@ -44,8 +47,8 @@ class DB():
         """ retrieve individuals that need to be created (that only exist in the database so far)
         :return: list with strings (individual names)
         """
-        self.cur.execute(
-            "SELECT * FROM Individuals AS i WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
+        # self.cur.execute("SELECT * FROM individuals AS i " +
+        #                  "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
         return []
 
     def getVoxTodos(self):
@@ -68,35 +71,76 @@ class DB():
         """
         # TODO: implement
 
+    def dropTables(self):
+        self.cur.execute("SET sql_notes = 0")
+        self.cur.execute("DROP TABLE IF EXISTS individuals")
+        self.cur.execute("DROP TABLE IF EXISTS traces")
+        self.cur.execute("DROP TABLE IF EXISTS offspring")
+        self.cur.execute("SET sql_notes = 1")
+        self.flush()
+
     def createTables(self):
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          "individuals " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
-                         "born FLOAT, " +
-                         "hyperneated TINYINT(1), " +
-                         "voxelyzed TINYINT(1), " +
-                         "postprocessed TINYINT(1), " +
+                         "born FLOAT NOT NULL, " +
+                         "hyperneated TINYINT(1) DEFAULT 0 NOT NULL, " +
+                         "voxelyzed TINYINT(1) DEFAULT 0 NOT NULL, " +
+                         "postprocessed TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          "traces " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
-                         "indiv_id INT, " +
-                         "ltime FLOAT, " +
-                         "x FLOAT, " +
-                         "y FLOAT, " +
-                         "z FLOAT, " +
-                         "fertile TINYINT(1), " +
+                         "indiv_id INT NOT NULL, " +
+                         "ltime FLOAT NOT NULL, " +
+                         "x FLOAT NOT NULL, " +
+                         "y FLOAT NOT NULL, " +
+                         "z FLOAT NOT NULL, " +
+                         "fertile TINYINT(1) DEFAULT 1 NOT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          "offspring " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
-                         "parent1_id INT, " +
+                         "parent1_id INT NOT NULL, " +
                          "parent2_id INT, " +
-                         "child_id INT, " +
-                         "ltime FLOAT, " +
+                         "child_id INT NOT NULL, " +
+                         "ltime FLOAT NOT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("SET sql_notes = 1")
+        self.flush()
+
+    def createIndividual(self, born, x, y):
+        self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0);")
+        self.cur.execute("SELECT LAST_INSERT_ID();")
+        individual_id = self.cur.fetchone()['LAST_INSERT_ID()']
+        self.cur.execute("INSERT INTO traces VALUES (NULL, " + str(individual_id) + ", 0, '" + str(x) + "', '" + str(
+            y) + "', 0, 1);")
+        self.flush()
+        print ("created individual: ",individual_id)
+
+        return individual_id
+
+
+    def getIndividual(self, id):
+        self.cur.execute("SELECT * FROM individuals AS i WHERE i.id = '" + str(id) + "' ")
+        # return dict(zip(self.keys_individuals, self.cur.fetchone()))
+        return self.cur.fetchone()
+
+
+    def getTraces(self, id):
+        self.cur.execute("SELECT * FROM traces AS t WHERE t.indiv_id = '" + str(id) + "' ")
+        return self.cur.fetchall()
+
+
+    def getFirstTrace(self, id):
+        self.cur.execute("SELECT * FROM traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC")
+        # return dict(zip(self.keys_traces, self.cur.fetchone()))
+        return self.cur.fetchone()
+
+    def flush(self):
+        self.con.commit()
+
 
     # ##################PETER FUNCTIONS
 
@@ -143,4 +187,5 @@ class DB():
             self.cur.execute(
                 "INSERT INTO RobotLocationData (RobotID, timestep, x, y, z, child, HNeat, VCad, JobID) VALUES (%s,%s,%d,%d,%d,1,1,0,0)",
                 (IntID, row[1], row[2], row[3], row[4]))
+
 
