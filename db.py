@@ -54,7 +54,7 @@ class DB():
         :return: list with strings (individual names)
         """
         self.cur.execute("SELECT * FROM individuals AS i " +
-        "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
+                         "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
 
@@ -63,7 +63,7 @@ class DB():
         :return: list with strings (individual names)
         """
         self.cur.execute("SELECT * FROM individuals AS i " +
-        "WHERE i.voxelyzed = 0 AND i.hyperneated = 1")
+                         "WHERE i.voxelyzed = 0 AND i.hyperneated = 1")
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
 
@@ -72,14 +72,14 @@ class DB():
         :return: list of strings (parent IDs), length of this list is either 0, 1 or 2, for no parents, has been mutated from 1 parent and was created by mating,
         """
         self.cur.execute("SELECT * FROM offspring AS o " +
-            "WHERE o.child_id = "+str(indiv))
+                         "WHERE o.child_id = " + str(indiv))
         result = self.cur.fetchone()
         if result == None:
             return []
         else:
-            out = [result['parent1_id']]
+            out = [str(result['parent1_id'])]
             if (result['parent2_id'] != None):
-                out.append(result['parent2_id'])
+                out.append(str(result['parent2_id']))
             return out
 
 
@@ -132,10 +132,10 @@ class DB():
     def createIndividual(self, born, x, y):
         self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0);")
         individual_id = self.getLastInsertID()
-        self.cur.execute("INSERT INTO traces VALUES (NULL, " + str(individual_id) + ", 0, '" + str(x) + "', '" + str(
+        self.cur.execute("INSERT INTO traces VALUES (NULL, " + individual_id + ", 0, '" + str(x) + "', '" + str(
             y) + "', 0, 1);")
         self.flush()
-        print ("created individual: "+str(individual_id))
+        print ("created individual: " + individual_id)
 
         return individual_id
 
@@ -162,11 +162,11 @@ class DB():
     def getLastInsertID(self):
         self.cur.execute("SELECT LAST_INSERT_ID();")
         individual_id = self.cur.fetchone()['LAST_INSERT_ID()']
-        return  individual_id
+        return str(individual_id)
 
-    def makeFakeBaby(self, parent1, parent2 = "NULL"):
-        id = self.createIndividual(0,1,2)
-        self.cur.execute("INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", "+str(id)+", 0);")
+    def makeFakeBaby(self, parent1, parent2="NULL"):
+        id = self.createIndividual(0, 1, 2)
+        self.cur.execute("INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
         return id
 
 
