@@ -43,33 +43,52 @@ class DB():
     def close(self):
         self.con.close()
 
+    def onlyGetIDs(self, results):
+        out = []
+        for indiv in results:
+            out.append(indiv["id"])
+        return out
+
     def getHNtodos(self):
         """ retrieve individuals that need to be created (that only exist in the database so far)
         :return: list with strings (individual names)
         """
-        # self.cur.execute("SELECT * FROM individuals AS i " +
-        #                  "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
-        return []
+        self.cur.execute("SELECT * FROM individuals AS i " +
+                         "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
+        results = self.cur.fetchall()
+        return self.onlyGetIDs(results)
 
     def getVoxTodos(self):
         """ retrieve individuals that need to be voxelyzed
         :return: list with strings (individual names)
         """
-        return []
+        self.cur.execute("SELECT * FROM individuals AS i " +
+                         "WHERE i.voxelyzed = 0 AND i.hyperneated = 1")
+        results = self.cur.fetchall()
+        return self.onlyGetIDs(results)
 
-    def getParents(self):
+    def getParents(self, indiv):
         """ get parents, if they exist, for a given individual
         :return: list of strings (parent IDs), length of this list is either 0, 1 or 2, for no parents, has been mutated from 1 parent and was created by mating,
         """
-        # TODO: implement
-        return []
+        self.cur.execute("SELECT * FROM offspring AS o " +
+                         "WHERE o.child_id = " + str(indiv))
+        result = self.cur.fetchone()
+        if result == None:
+            return []
+        else:
+            out = [str(result['parent1_id'])]
+            if (result['parent2_id'] != None):
+                out.append(str(result['parent2_id']))
+            return out
+
 
     def markAsHyperneated(self, indiv):
         """ marks the individual as been processed by HyperNEAT. I.e. an actual file was created from database
         :param indiv: string, ID of an individual
         :return: None
         """
-        # TODO: implement
+        self.cur.execute("UPDATE individuals SET hyperneated = 1 WHERE id = " + str(indiv) + ";")
 
     def dropTables(self):
         self.cur.execute("SET sql_notes = 0")
@@ -112,12 +131,11 @@ class DB():
 
     def createIndividual(self, born, x, y):
         self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0);")
-        self.cur.execute("SELECT LAST_INSERT_ID();")
-        individual_id = self.cur.fetchone()['LAST_INSERT_ID()']
-        self.cur.execute("INSERT INTO traces VALUES (NULL, " + str(individual_id) + ", 0, '" + str(x) + "', '" + str(
+        individual_id = self.getLastInsertID()
+        self.cur.execute("INSERT INTO traces VALUES (NULL, " + individual_id + ", 0, '" + str(x) + "', '" + str(
             y) + "', 0, 1);")
         self.flush()
-        print ("created individual: ",individual_id)
+        print ("created individual: " + individual_id)
 
         return individual_id
 
@@ -140,6 +158,16 @@ class DB():
 
     def flush(self):
         self.con.commit()
+
+    def getLastInsertID(self):
+        self.cur.execute("SELECT LAST_INSERT_ID();")
+        individual_id = self.cur.fetchone()['LAST_INSERT_ID()']
+        return str(individual_id)
+
+    def makeFakeBaby(self, parent1, parent2="NULL"):
+        id = self.createIndividual(0, 1, 2)
+        self.cur.execute("INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
+        return id
 
 
     # ##################PETER FUNCTIONS
@@ -187,5 +215,7 @@ class DB():
             self.cur.execute(
                 "INSERT INTO RobotLocationData (RobotID, timestep, x, y, z, child, HNeat, VCad, JobID) VALUES (%s,%s,%d,%d,%d,1,1,0,0)",
                 (IntID, row[1], row[2], row[3], row[4]))
+
+
 
 
