@@ -81,12 +81,9 @@ class HNWorker(threading.Thread):
         :return: None
         """
         for indiv in todos:
-            parents = self.db.getParents(indiv)  # parent will be a list of size 0|1|2
-            # TODO: run hyperneat here with popen, depending on list len
-            if len(parents) == 0:
-                pass
-
-                #TODO (later): error check the hyperneat output
+            hn_params = " ".join(self.db.getParents(indiv))  # parent will be a list of size 0|1|2
+            self.runHN(indiv, hn_params)
+                # TODO (later): error check the hyperneat output
         if (self.debug):
             print("HN: executing hyperneat for the following individuals:")
             print(todos)
@@ -98,7 +95,7 @@ class HNWorker(threading.Thread):
         :return: None
         """
         # TODO: run the real hyperneat on lisa, list all the stray files that HN generates
-        #TODO: and here write a few lines to clean them up (i.e. just delete unused HN-generated files)
+        # TODO: and here write a few lines to clean them up (i.e. just delete unused HN-generated files)
         # probably the todos parameter is not necessary, but keep it for now
         if (self.debug):
             print("HN: cleaning up")
@@ -117,26 +114,27 @@ class HNWorker(threading.Thread):
             print("HN: preprocessing")
         pass
 
-    def runHN(self, hn_params):
+
+    def runHN(self, indiv, hn_params):
         """ run hyperneat with its parameters
         :param hn_params:
         :return: error code
         """
+        hn_string = "-I params.dat -R $RANDOM -O "+str(indiv)+" -ORG "+hn_params
         try:
-            subprocess.check_call([self.hn_binary, hn_params], cwd=self.base_path + self.hn_path,
+            subprocess.check_call(self.hn_binary + " " + hn_string, cwd=self.base_path + self.hn_path,
                                   shell=True)  # Double check this, may brick the whole thing
         except CalledProcessError as e:
             print ("HN: during HN execution there was an error:")
             print (str(e.returncode))
-            quit()  # TODO: better error handling, but so far, we dont HN to fail
-
+            quit()  # TODO: better error handling, but so far, we dont allow HN to fail
 
 # Function keeps checking database for new encounters:
 
 # PY#
 # while True:
 #
-#     CloseRobots(distance, waittime, childtime)
+# CloseRobots(distance, waittime, childtime)
 #
 #     GetParents(endtime) #TODO Change for new code
 #

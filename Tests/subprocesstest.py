@@ -6,7 +6,7 @@ from subprocess import CalledProcessError
 class Test():
 
     hn_binary="python HyperNEATdummy.py"
-    base_path="C:\\Users\\Florian\\Documents\\dev\\EC14-main\\Tests"
+    base_path= "~/Documents/dev/EC14-main/Tests"
     hn_path=""
 
 
