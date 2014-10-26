@@ -1,5 +1,5 @@
 import threading, time
-
+from db import DB
 
 class VoxWorker(threading.Thread):
     """ Python script for Voxelize worker... runs until cancelled or till max waiting time
@@ -14,11 +14,11 @@ class VoxWorker(threading.Thread):
     debug = False
     db = None
 
-    def __init__(self, db, base_path, debug=False):
+    def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
+        self.db = DB(dbParams[0], dbParams[1], dbParams[2])
         self.base_path = base_path
         self.debug = debug
-        self.db = db
         self.stopRequest = threading.Event()
 
     def run(self):

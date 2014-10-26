@@ -120,7 +120,7 @@ class EC14controller():
             base_path = self.askExperimentName()
 
         print "Working directory: " + base_path
-        self.base_path = base_path
+        self.base_path = os.path.expanduser(base_path) + "/"
 
 
     def installFiles(self):
@@ -222,6 +222,7 @@ class EC14controller():
         """
 
         self.db = DB(self.dbString, self.end_time, self.indiv_max_age)
+        self.dbParams = (self.dbString, self.end_time, self.indiv_max_age)
 
         if (self.newExperiment):
             self.db.createTables()
@@ -243,21 +244,24 @@ class EC14controller():
 
 
     def readConfig(self):
+        print("config path: "+self.base_path + 'config/config.ini')
         self.config.read(self.base_path + 'config/config.ini')
 
-        if (self.pop_size == ""):  # this is the case, when the experiment exists
+        if (self.pop_size == 0):  # this is the case, when the experiment exists
             self.arena_x = self.config.getfloat('Arena', 'arena_x')
             self.arena_y = self.config.getfloat('Arena', 'arena_y')
-            self.arena_type = self.config.getfloat('Arena', 'arena_type')
+            self.arena_type = self.config.get('Arena', 'arena_type')
             self.end_time = self.config.getfloat('Experiment', 'end_time')
             self.indiv_max_age = self.config.getfloat('Experiment', 'indiv_max_age')
-            self.pop_size = self.config.getfloat('Experiment', 'pop_size')
-            self.pop_random = self.config.getfloat('Experiment', 'pop_random')
+            self.pop_size = self.config.getint('Experiment', 'pop_size')
+            self.pop_random = self.config.get('Experiment', 'pop_random')
             self.pop_random_start_end = (
-            self.config.getfloat('Experiment', 'pop_random_stat'), self.config.getfloat('Experiment', 'pop_random_end'))
+                self.config.getfloat('Experiment', 'pop_random_start'),
+                self.config.getfloat('Experiment', 'pop_random_end')
+            )
 
         if (self.dbString == ""):  # this is the case, when the experiment exists
-            self.dbString = self.config.getfloat('DB', 'db_string')
+            self.dbString = self.config.get('DB', 'db_string')
 
 
     def start(self):
@@ -275,11 +279,11 @@ class EC14controller():
 
 
         # launch workers
-        self.hnWorker = hn.HNWorker(self.db, self.base_path, True)
+        self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
         self.hnWorker.start()
-        self.voxWorker = vox.VoxWorker(self.db, self.base_path, True)
+        self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
         self.voxWorker.start()
-        self.ppWorker = pp.PostprocessingWorker(self.db, self.base_path, True)
+        self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.base_path, True)
         self.ppWorker.start()
 
 
@@ -287,8 +291,8 @@ class EC14controller():
         # while True:
         # time.sleep(2)  # Delay for 2 seconds
         # count =  4# Number of individuals not yet HNed or virtualized (get from db) #TODO
-        #     if count == 0:
-        #         running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
+        # if count == 0:
+        # running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
         #         if running_proc == 0:
         #             vox_worker.terminate()
         #             hyp_worker.terminate()

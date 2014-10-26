@@ -1,5 +1,6 @@
 from subprocess import CalledProcessError
 import threading, time, subprocess, os
+from db import DB
 
 
 class HNWorker(threading.Thread):
@@ -11,13 +12,14 @@ class HNWorker(threading.Thread):
     base_path = ""
     pop_path = "population/"
     hn_path = "~/EC14-HyperNEAT/out/"
-    hn_binary = "./HyperNEAT"
+    # hn_binary = "./HyperNEAT"
+    hn_binary = "python HyperNEATdummy.py"
     debug = False
     db = None
 
-    def __init__(self, db, base_path, debug=False):
+    def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
-        self.db = db
+        self.db = DB(dbParams[0], dbParams[1], dbParams[2])
         self.base_path = base_path
         # individuals will be found here: self.base_path + self.pop_path + str(indiv)
 
@@ -68,11 +70,12 @@ class HNWorker(threading.Thread):
         """ check the DB or the filesystem and look if there are any new individuals that need to be hyperneated
         :return: simple python list with the names of the individuals that are new and need to be hyperneated
         """
-        todos = self.db.getHNtodos()
-
         if (self.debug):
             print("HN: checking for todos")
 
+
+        todos = self.db.getHNtodos()
+        print (todos)
         return todos
 
     def execHN(self, todos):
@@ -80,13 +83,15 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals to be hyperneated
         :return: None
         """
-        for indiv in todos:
-            hn_params = " ".join(self.db.getParents(indiv))  # parent will be a list of size 0|1|2
-            self.runHN(indiv, hn_params)
-                # TODO (later): error check the hyperneat output
         if (self.debug):
             print("HN: executing hyperneat for the following individuals:")
             print(todos)
+
+        for indiv in todos:
+            hn_params = " ".join(self.db.getParents(indiv))  # parent will be a list of size 0|1|2
+            self.runHN(indiv, hn_params)
+            # TODO (later): error check the hyperneat output
+
         pass
 
     def cleanupAfterHN(self, todos):
@@ -94,11 +99,12 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
         """
+        if (self.debug):
+            print("HN: cleaning up")
+
         # TODO: run the real hyperneat on lisa, list all the stray files that HN generates
         # TODO: and here write a few lines to clean them up (i.e. just delete unused HN-generated files)
         # probably the todos parameter is not necessary, but keep it for now
-        if (self.debug):
-            print("HN: cleaning up")
         pass
 
 
@@ -107,11 +113,12 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
         """
+        if (self.debug):
+            print("HN: preprocessing")
+
         for indiv in todos:
             # TODO: move the final files somewhere else
             self.db.markAsHyperneated(indiv)
-        if (self.debug):
-            print("HN: preprocessing")
         pass
 
 
@@ -122,7 +129,7 @@ class HNWorker(threading.Thread):
         """
         hn_string = "-I params.dat -R $RANDOM -O "+str(indiv)+" -ORG "+hn_params
         try:
-            subprocess.check_call(self.hn_binary + " " + hn_string, cwd=os.path.expanduser(self.base_path + self.hn_path),
+            subprocess.check_call(self.hn_binary + " " + hn_string, cwd=os.path.expanduser(self.hn_path),
                                   shell=True)  # Double check this, may brick the whole thing
         except CalledProcessError as e:
             print ("HN: during HN execution there was an error:")

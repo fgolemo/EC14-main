@@ -1,11 +1,11 @@
 # HyperNEAT dummy
 import sys
 
-if (len(sys.argv) < 5):
-	print("Error, need the parameters: -I parameters.dat -O targetID -ORG [parent1 [parent2]]")
+if (len(sys.argv) < 7):
+	print("Error, need the parameters: -I parameters.dat -R $RANDOM -O targetID -ORG [parent1 [parent2]]")
 	exit()
 
-id = sys.argv[4]
+id = sys.argv[6]
 genotypeFile = id + "-genotype.xml"
 voxFile = id + "-vox.vxa"
 print("here HN will print random strings\nline by line\ncontaining some debugging infos")
