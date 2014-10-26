@@ -1,5 +1,5 @@
 from subprocess import CalledProcessError
-import threading, time, subprocess
+import threading, time, subprocess, os
 
 
 class HNWorker(threading.Thread):
@@ -10,8 +10,8 @@ class HNWorker(threading.Thread):
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
     pop_path = "population/"
-    hn_path = "bin/"
-    hn_binary = "HyperNEAT"
+    hn_path = "~/EC14-HyperNEAT/out/"
+    hn_binary = "./HyperNEAT"
     debug = False
     db = None
 
@@ -122,7 +122,7 @@ class HNWorker(threading.Thread):
         """
         hn_string = "-I params.dat -R $RANDOM -O "+str(indiv)+" -ORG "+hn_params
         try:
-            subprocess.check_call(self.hn_binary + " " + hn_string, cwd=self.base_path + self.hn_path,
+            subprocess.check_call(self.hn_binary + " " + hn_string, cwd=os.path.expanduser(self.base_path + self.hn_path),
                                   shell=True)  # Double check this, may brick the whole thing
         except CalledProcessError as e:
             print ("HN: during HN execution there was an error:")
