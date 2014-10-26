@@ -73,7 +73,6 @@ class HNWorker(threading.Thread):
         if (self.debug):
             print("HN: checking for todos")
 
-
         todos = self.db.getHNtodos()
         print (todos)
         return todos
@@ -89,7 +88,9 @@ class HNWorker(threading.Thread):
 
         for indiv in todos:
             hn_params = " ".join(self.db.getParents(indiv))  # parent will be a list of size 0|1|2
+            print("HN: creating individual (calling HN binary): " + str(indiv) )
             self.runHN(indiv, hn_params)
+            print("HN: finished creating individual: " + str(indiv) )
             # TODO (later): error check the hyperneat output
 
         pass
@@ -128,10 +129,14 @@ class HNWorker(threading.Thread):
         :param hn_params:
         :return: error code
         """
-        hn_string = "-I params.dat -R $RANDOM -O "+str(indiv)+" -ORG "+hn_params
+        hn_string = "-I params.dat -R $RANDOM -O " + str(indiv) + " -ORG " + hn_params
         try:
-            subprocess.check_call(self.hn_binary + " " + hn_string, cwd=os.path.expanduser(self.hn_path),
-                                  shell=True)  # Double check this, may brick the whole thing
+            subprocess.check_call(self.hn_binary + " " + hn_string,
+                                  cwd=os.path.expanduser(self.hn_path),
+                                  stdout=open(self.base_path + "hn.stdout.log", "w"),
+                                  stderr=open(self.base_path + "hn.stderr.log", "w"),
+                                  stdin=open(os.devnull),
+                                  shell=True)
         except CalledProcessError as e:
             print ("HN: during HN execution there was an error:")
             print (str(e.returncode))
@@ -144,7 +149,7 @@ class HNWorker(threading.Thread):
 #
 # CloseRobots(distance, waittime, childtime)
 #
-#     GetParents(endtime) #TODO Change for new code
+# GetParents(endtime) #TODO Change for new code
 #
 # 	if parents == NULL:
 # 		continue
