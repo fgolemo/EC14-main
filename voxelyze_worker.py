@@ -1,24 +1,34 @@
+import os
 import threading, time
 from db import DB
+
 
 class VoxWorker(threading.Thread):
     """ Python script for Voxelize worker... runs until cancelled or till max waiting time
     """
 
-    voxelize_queue = []
     pause_time = 2
     queue_length = 12
     queue = []
+    queue_sent = []
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
+    pool_path = "pool/"
+    pool_filename = 'vox.{0}.pool'
+    pop_path = "population/"
+    voxelyze_path = "~/EC14-voxelyze/voxelyzeMain"
+    voxelyze_stepping = 100
+    voxelyze_cmd = "./voxelyze -f {path}{id}_vox.vxa -p {stepping} > {id}.trace"
     debug = False
     db = None
+    lastPoolFile = 0
 
     def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
         self.db = DB(dbParams[0], dbParams[1], dbParams[2])
         self.base_path = base_path
         self.debug = debug
+        self.poolFilePath = self.base_path + self.pool_path + self.pool_filename
         self.stopRequest = threading.Event()
 
     def run(self):
@@ -67,7 +77,7 @@ class VoxWorker(threading.Thread):
             print ("VOX: found " + str(len(todos)) + " new individuals.")
 
         for todo in todos:
-            if (not todo in self.queue):
+            if (not todo in self.queue and not todo in self.queue_sent):
                 self.queue.append(todo)
 
         if (len(self.queue) > self.queue_length):
@@ -75,6 +85,9 @@ class VoxWorker(threading.Thread):
                 print ("vox: got " + str(
                     self.queue_length) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
             self.sendQueue(self.queue[:self.queue_length])
+
+            # now splice them apart, move the sent id into a separate list
+            self.queue_sent += self.queue[:self.queue_length]
             self.queue = self.queue[self.queue_length:]  # keep only the first N elements in list
         else:
             if (self.debug):
@@ -95,24 +108,51 @@ class VoxWorker(threading.Thread):
 
         return todos
 
+    def getLastPoolFile(self):
+        if (self.lastPoolFile == 0):  # this means is hasn't been set
+            self.lastPoolFile = 1  # try 1 first, then incr
+            print("looking at pool file:"+ (self.poolFilePath.format(self.lastPoolFile)) )
+            while (os.path.isfile(self.poolFilePath.format(self.lastPoolFile))):
+                self.lastPoolFile += 1
+            if (self.debug):
+                print("VOX: found last pool file number:" + str(self.lastPoolFile))
+        else:
+            self.lastPoolFile += 1
+
+    def createPoolFile(self, sendList):
+        self.getLastPoolFile()
+        f = open(self.poolFilePath.format(self.lastPoolFile), 'w+')
+        path = (self.base_path + self.pop_path)
+        if (os.name == "nt"):  # then we are on windows
+            path = path.replace("/", "\\")
+        else:
+            path = path.replace("\\", "/")  # IDK if we ever need this...
+        for indiv in sendList:
+            f.write(self.voxelyze_cmd.format(path=path, id=indiv, stepping=self.voxelyze_stepping) + "\n")
+        f.close()
+
     def sendQueue(self, sendList):
         """ submits the queue (or part of it) to the Lisa job queue
         :param sendList: simple python list with the names of the individuals to be voxelyzed right now
         :return: None
         """
-        # TODO: write pool file (12 lines, each line is a call to voxelyze)
-        #TODO: run stopos/ submit.sh / everts script that qsubs the stuff in the pool
-        #TODO: mark all those individuals in the DB as submitted
-
         if (self.debug):
             print("VOX: sending queue to the job system")
+
+        # write pool file (12 lines, each line is a call to voxelyze)
+        self.createPoolFile(sendList)
+
+        # TODO: run stopos/ submit.sh / everts script that qsubs the stuff in the pool
+
+        #TODO: mark all those individuals in the DB as submitted - do we still need this?
+
         pass
 
 
 # while True:
 #
 # GetNextChildren(endtime) #gives back array/tuple with
-#     #ID, birthTime, hasBeenSimulated = 0, hasBeenProcessed = 0, hasBeenHNed = 0
+# #ID, birthTime, hasBeenSimulated = 0, hasBeenProcessed = 0, hasBeenHNed = 0
 #
 # 	if GetNextChildren(endtime) == NULL:
 # 		continue

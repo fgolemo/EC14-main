@@ -6,8 +6,8 @@ if (len(sys.argv) < 7):
 	exit()
 
 id = sys.argv[6]
-genotypeFile = id + "-genotype.xml"
-voxFile = id + "-vox.vxa"
+genotypeFile = id + "_genotype.xml"
+voxFile = id + "_vox.vxa"
 print("here HN will print random strings\nline by line\ncontaining some debugging infos")
 
 print("generating 2 files:\n"+genotypeFile+" & "+voxFile)
