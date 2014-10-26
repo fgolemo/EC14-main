@@ -53,6 +53,7 @@ class DB():
         """ retrieve individuals that need to be created (that only exist in the database so far)
         :return: list with strings (individual names)
         """
+        self.flush()
         self.cur.execute("SELECT * FROM individuals AS i " +
                          "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
         results = self.cur.fetchall()
@@ -62,6 +63,7 @@ class DB():
         """ retrieve individuals that need to be voxelyzed
         :return: list with strings (individual names)
         """
+        self.flush()
         self.cur.execute("SELECT * FROM individuals AS i " +
                          "WHERE i.voxelyzed = 0 AND i.hyperneated = 1")
         results = self.cur.fetchall()
@@ -71,6 +73,7 @@ class DB():
         """ get parents, if they exist, for a given individual
         :return: list of strings (parent IDs), length of this list is either 0, 1 or 2, for no parents, has been mutated from 1 parent and was created by mating,
         """
+        self.flush()
         self.cur.execute("SELECT * FROM offspring AS o " +
                          "WHERE o.child_id = " + str(indiv))
         result = self.cur.fetchone()
@@ -141,17 +144,20 @@ class DB():
 
 
     def getIndividual(self, id):
+        self.flush()
         self.cur.execute("SELECT * FROM individuals AS i WHERE i.id = '" + str(id) + "' ")
         # return dict(zip(self.keys_individuals, self.cur.fetchone()))
         return self.cur.fetchone()
 
 
     def getTraces(self, id):
+        self.flush()
         self.cur.execute("SELECT * FROM traces AS t WHERE t.indiv_id = '" + str(id) + "' ")
         return self.cur.fetchall()
 
 
     def getFirstTrace(self, id):
+        self.flush()
         self.cur.execute("SELECT * FROM traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC")
         # return dict(zip(self.keys_traces, self.cur.fetchone()))
         return self.cur.fetchone()

@@ -119,6 +119,7 @@ class HNWorker(threading.Thread):
         for indiv in todos:
             # TODO: move the final files somewhere else
             self.db.markAsHyperneated(indiv)
+        self.db.flush()
         pass
 
 

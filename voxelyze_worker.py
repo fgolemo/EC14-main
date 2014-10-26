@@ -65,7 +65,10 @@ class VoxWorker(threading.Thread):
         """
         if (self.debug):
             print ("VOX: found " + str(len(todos)) + " new individuals.")
-        self.queue += todos
+
+        for todo in todos:
+            if (not todo in self.queue):
+                self.queue.append(todo)
 
         if (len(self.queue) > self.queue_length):
             if (self.debug):
