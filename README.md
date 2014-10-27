@@ -31,7 +31,7 @@ The HyperNEAT worker is launched and begins parsing the database for IDs that ha
 
 ### Voxelyze Worker
 
-The Voxelyze worker checks the database iteratively, to find individuals which have been generated, but not yet virtualizes. When it finds such an individual, it adds its ID to a .pool file, until the pool contains 12 individuals. When the threshold is reached, the worker submits the pool to Lisa via **stopos**`.
+The Voxelyze worker checks the database iteratively, to find individuals which have been generated, but not yet virtualizes. When it finds such an individual, it adds its ID to a .pool file, until the pool contains 12 individuals. When the threshold is reached, the worker submits the pool to Lisa via **stopos**.
 
 ### Preprocessing
 
