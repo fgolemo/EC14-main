@@ -18,5 +18,7 @@ scriptdir=${HOME}/EC14-main/scripts
 
 JOB_ID=`qsub -o ${logs}/${2}.output.log -e ${logs}/${2}.error.log -l nodes=1,walltime=600 -v pool=${pool},population=${population} ${scriptdir}/run_vox.sh`
 
-#display job queue
-showq -u $USER
+# display job queue
+#showq -u $USER
+
+echo ${JOB_ID}
