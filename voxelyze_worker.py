@@ -1,4 +1,5 @@
 import os
+import subprocess
 import threading, time
 from db import DB
 
@@ -12,13 +13,14 @@ class VoxWorker(threading.Thread):
     queue = []
     queue_sent = []
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
+    queue_submit_time = 60 * 10  # after 10 minutes just submit the queue as it is
     base_path = ""
     pool_path = "pool/"
     pool_filename = 'vox.{0}.pool'
     pop_path = "population/"
+    submit_script = "scripts/submit.sh"
     voxelyze_path = "~/EC14-voxelyze/voxelyzeMain"
     voxelyze_stepping = 100
-    #voxelyze_cmd = "./voxelyze -f {path}{id}_vox.vxa -p {stepping} > {id}.trace"
     voxelyze_cmd = "{id}"
     debug = False
     db = None
@@ -31,6 +33,7 @@ class VoxWorker(threading.Thread):
         self.debug = debug
         self.poolFilePath = self.base_path + self.pool_path + self.pool_filename
         self.stopRequest = threading.Event()
+        self.submit_script = os.path.dirname(os.path.realpath(__file__)) + "/" + self.submit_script
 
     def run(self):
         """ main thread function
@@ -123,15 +126,28 @@ class VoxWorker(threading.Thread):
     def createPoolFile(self, sendList):
         self.getLastPoolFile()
         f = open(self.poolFilePath.format(self.lastPoolFile), 'w+')
-        # path = (self.base_path + self.pop_path)
-        # if os.name == "nt":  # then we are on windows
-        #     path = path.replace("/", "\\")
-        # else:
-        #     path = path.replace("\\", "/")  # IDK if we ever need this...
+
         for indiv in sendList:
-            # f.write(self.voxelyze_cmd.format(path=path, id=indiv, stepping=self.voxelyze_stepping) + "\n")
             f.write(self.voxelyze_cmd.format(id=indiv) + "\n")
         f.close()
+
+    def getExperimentName(self):
+        return os.path.basename(self.base_path[:-1])
+
+    def runQsub(self):
+        vox_string = self.getExperimentName() + " " + self.lastPoolFile
+        try:
+            subprocess.check_call(self.submit_script + " " + vox_string,
+                                  stdout=open(self.base_path + "logs/" + "submit.stdout.log", "w"),
+                                  stderr=open(self.base_path + "logs/" + "submit.stderr.log", "w"),
+                                  stdin=open(os.devnull),
+                                  shell=True)
+        except subprocess.CalledProcessError as e:
+            print ("Vox: during submit.sh execution there was an error:")
+            print (str(e.returncode))
+            quit()
+            # TODO: better error handling, but so far, we dont allow submit.sh to fail -
+            # TODO: and if it fails, we can check the logs immediately
 
     def sendQueue(self, sendList):
         """ submits the queue (or part of it) to the Lisa job queue
@@ -141,10 +157,11 @@ class VoxWorker(threading.Thread):
         if self.debug:
             print("VOX: sending queue to the job system")
 
-        # write pool file (12 lines, each line is a call to voxelyze)
+        # write pool file (12 lines, each line is a call to voxelyze) - correction, each line is an indiv ID
         self.createPoolFile(sendList)
 
-        # TODO: run stopos/ submit.sh / everts script that qsubs the stuff in the pool
+        # run submit.sh that qsubs the stuff in the recent pool
+        self.runQsub()
 
         #TODO: mark all those individuals in the DB as submitted - do we still need this?
 
