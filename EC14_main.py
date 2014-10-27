@@ -34,10 +34,8 @@ class EC14controller():
     yes = {'yes', 'y', 'ye'}
     no = {'no', 'n', ''}
 
-
     def __init__(self):
         self.config = ConfigParser.RawConfigParser()
-
 
     def get_int(self, msg, default):
         while True:
@@ -62,7 +60,6 @@ class EC14controller():
         exp_path = os.path.expanduser("~/EC14-Exp-" + exp_name + "/")
 
         return exp_path
-
 
     def askDatabaseString(self):
         """ asks the user for the database parameters
@@ -123,7 +120,6 @@ class EC14controller():
         print "Working directory: " + base_path
         self.base_path = os.path.expanduser(base_path) + "/"
 
-
     def installFiles(self):
         """ Copy script files into experiment directory and saves config
         :return: None
@@ -138,7 +134,6 @@ class EC14controller():
         for f in files:
             if os.path.isfile(f):
                 shutil.copy(f, self.base_path + "scripts/")
-
 
     def installConfig(self):
         """ Copy script files into experiment directory and saves config
@@ -218,7 +213,6 @@ class EC14controller():
 
         return starttime, endtime
 
-
     def getDB(self):
         """ retrieve database string from config or cache
         :return: None
@@ -245,7 +239,6 @@ class EC14controller():
             y = random.randrange(0, self.arena_y * self.random_granularity) / self.random_granularity
             self.db.createIndividual(birth, x, y)
 
-
     def readConfig(self):
         print("config path: "+self.base_path + 'config/config.ini')
         self.config.read(self.base_path + 'config/config.ini')
@@ -265,7 +258,6 @@ class EC14controller():
 
         if (self.dbString == ""):  # this is the case, when the experiment exists
             self.dbString = self.config.get('DB', 'db_string')
-
 
     def start(self):
         self.askWorkingDir()
@@ -288,20 +280,6 @@ class EC14controller():
         self.voxWorker.start()
         self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.base_path, True)
         self.ppWorker.start()
-
-
-        # If there are no individuals to be created or processed and there are no running jobs in lisa, send terminate request to the workers:
-        # while True:
-        # time.sleep(2)  # Delay for 2 seconds
-        # count =  4# Number of individuals not yet HNed or virtualized (get from db) #TODO
-        # if count == 0:
-        # running_proc = 3# Check on running processes in Lisa (Check on jobs: "showq -u jheinerm") #TODO - Need to translate lisa output into bool
-        #         if running_proc == 0:
-        #             vox_worker.terminate()
-        #             hyp_worker.terminate()
-        #             print "Done"
-        #             exit()
-        # this will pause the main script until the user does summin
 
 
 ctrl = EC14controller()

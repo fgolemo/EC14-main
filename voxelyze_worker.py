@@ -38,21 +38,21 @@ class VoxWorker(threading.Thread):
         """
         waitCounter = 0
         startTime = time.time()
-        while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
+        while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             todos = self.checkForTodos()
 
-            if (len(todos) > 0):
-                if (self.debug):
+            if len(todos) > 0:
+                if self.debug:
                     print("VOX: found " + str(len(todos)) + " todos")
                 self.addToQueue(todos)
                 waitCounter = 0
             else:
-                if (self.debug):
+                if self.debug:
                     print("VOX: found nothing")
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
-            if (self.debug):
+            if self.debug:
                 print("VOX: sleeping now for " + str(self.pause_time) + "s")
             self.stopRequest.wait(self.pause_time)
 
@@ -64,7 +64,7 @@ class VoxWorker(threading.Thread):
         :param timeout: not implemented yet
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print("VOX: got kill request for thread")
         self.stopRequest.set()
         super(VoxWorker, self).join(timeout)
@@ -74,15 +74,15 @@ class VoxWorker(threading.Thread):
         :param todos: simple python list with the names of the individuals to be voxelyzed
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print ("VOX: found " + str(len(todos)) + " new individuals.")
 
         for todo in todos:
             if (not todo in self.queue and not todo in self.queue_sent):
                 self.queue.append(todo)
 
-        if (len(self.queue) > self.queue_length):
-            if (self.debug):
+        if len(self.queue) > self.queue_length:
+            if self.debug:
                 print ("vox: got " + str(
                     self.queue_length) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
             self.sendQueue(self.queue[:self.queue_length])
@@ -91,10 +91,10 @@ class VoxWorker(threading.Thread):
             self.queue_sent += self.queue[:self.queue_length]
             self.queue = self.queue[self.queue_length:]  # keep only the first N elements in list
         else:
-            if (self.debug):
+            if self.debug:
                 print("VOX: queue not full yet, waiting for more before submitting")
             pass
-        if (self.debug):
+        if self.debug:
             print("VOX: current queue:")
             print(self.queue)
 
@@ -104,18 +104,18 @@ class VoxWorker(threading.Thread):
         """
         todos = self.db.getVoxTodos()
 
-        if (self.debug):
+        if self.debug:
             print("VOX: checking for TODOs")
 
         return todos
 
     def getLastPoolFile(self):
-        if (self.lastPoolFile == 0):  # this means is hasn't been set
+        if self.lastPoolFile == 0:  # this means is hasn't been set
             self.lastPoolFile = 1  # try 1 first, then incr
             print("looking at pool file:"+ (self.poolFilePath.format(self.lastPoolFile)) )
             while (os.path.isfile(self.poolFilePath.format(self.lastPoolFile))):
                 self.lastPoolFile += 1
-            if (self.debug):
+            if self.debug:
                 print("VOX: found last pool file number:" + str(self.lastPoolFile))
         else:
             self.lastPoolFile += 1
@@ -123,11 +123,11 @@ class VoxWorker(threading.Thread):
     def createPoolFile(self, sendList):
         self.getLastPoolFile()
         f = open(self.poolFilePath.format(self.lastPoolFile), 'w+')
-        path = (self.base_path + self.pop_path)
-        if (os.name == "nt"):  # then we are on windows
-            path = path.replace("/", "\\")
-        else:
-            path = path.replace("\\", "/")  # IDK if we ever need this...
+        # path = (self.base_path + self.pop_path)
+        # if os.name == "nt":  # then we are on windows
+        #     path = path.replace("/", "\\")
+        # else:
+        #     path = path.replace("\\", "/")  # IDK if we ever need this...
         for indiv in sendList:
             # f.write(self.voxelyze_cmd.format(path=path, id=indiv, stepping=self.voxelyze_stepping) + "\n")
             f.write(self.voxelyze_cmd.format(id=indiv) + "\n")
@@ -138,7 +138,7 @@ class VoxWorker(threading.Thread):
         :param sendList: simple python list with the names of the individuals to be voxelyzed right now
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print("VOX: sending queue to the job system")
 
         # write pool file (12 lines, each line is a call to voxelyze)
@@ -149,37 +149,3 @@ class VoxWorker(threading.Thread):
         #TODO: mark all those individuals in the DB as submitted - do we still need this?
 
         pass
-
-
-# while True:
-#
-# GetNextChildren(endtime) #gives back array/tuple with
-# #ID, birthTime, hasBeenSimulated = 0, hasBeenProcessed = 0, hasBeenHNed = 0
-#
-# 	if GetNextChildren(endtime) == NULL:
-# 		continue
-#
-# 	else:
-# 	    for ind in children:
-#             voxelize_queue.append("./"+str(exp_name)+"/"+str(ChildID))
-#
-#  	if (voxelize_queue.length == queue_length or waiting_time > max_waiting_time):
-# 		waiting_time = 0
-#
-# 		# TODO Spawn parallel processes instead of for loop
-# 		### TRY IN LISA ###
-# #        proc_per_node = "#PBS -lnodes=1:ppn=12"
-# #    	subprocess.Popen(proc_per_node.split(),stdout=STDOUT,shell=True)
-#     	###################
-#     	# Note: Not using scratch space because operations are not I/O intensive.
-#
-# 		for x in voxelize_queue:
-# 		    subprocess.Popen(["gsub","voxelize","./VoxCad/"+voxelize_queue(x),"-lnodes=1:ppn=12"],cwd="./VoxCad",shell=True) #TODO Need to test, string input may be an issue since it isnt in STDIN
-#
-#     	voxelize_queue = []
-#
-#     time.sleep(1)
-# 	waiting_time += 1 #add 1 sec waiting time
-
-	
-
