@@ -8,7 +8,7 @@ stopos add -p ${pool} $1
 
 scriptdir=${HOME}/EC14-main/scripts
 
-JOB_ID=`qsub -o logs -e logs -v pool=${pool} ${scriptdir}/run_vox.sh`
+JOB_ID=`qsub -o logs -e logs -l nodes=1,walltime=600 -v pool=${pool} ${scriptdir}/run_vox.sh`
 
 #display job queue
 showq -u $USER
