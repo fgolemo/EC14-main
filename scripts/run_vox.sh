@@ -12,7 +12,7 @@ for ((i=1; i<=ncores; i++)) ; do
     if [ "$STOPOS_RC" != "OK" ]; then # Parameter pool exhausted: we're done
         break
     fi
-    $STOPOS_VALUE
+    ./voxelyze -f ${exp}${STOPOS_VALUE}_vox.vxa -p 100 > ${exp}${STOPOS_VALUE}.trace
     stopos remove -p ${pool}
 ) &
 done

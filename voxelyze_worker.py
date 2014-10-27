@@ -18,7 +18,8 @@ class VoxWorker(threading.Thread):
     pop_path = "population/"
     voxelyze_path = "~/EC14-voxelyze/voxelyzeMain"
     voxelyze_stepping = 100
-    voxelyze_cmd = "./voxelyze -f {path}{id}_vox.vxa -p {stepping} > {id}.trace"
+    #voxelyze_cmd = "./voxelyze -f {path}{id}_vox.vxa -p {stepping} > {id}.trace"
+    voxelyze_cmd = "{id}"
     debug = False
     db = None
     lastPoolFile = 0
@@ -128,7 +129,8 @@ class VoxWorker(threading.Thread):
         else:
             path = path.replace("\\", "/")  # IDK if we ever need this...
         for indiv in sendList:
-            f.write(self.voxelyze_cmd.format(path=path, id=indiv, stepping=self.voxelyze_stepping) + "\n")
+            # f.write(self.voxelyze_cmd.format(path=path, id=indiv, stepping=self.voxelyze_stepping) + "\n")
+            f.write(self.voxelyze_cmd.format(id=indiv) + "\n")
         f.close()
 
     def sendQueue(self, sendList):
