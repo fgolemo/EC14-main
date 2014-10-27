@@ -27,7 +27,7 @@ The script then spawns the two workers which run on the home node constantly, ch
 
 ### Hyperneat Worker
 
-The HyperNEAT worker is launched and begins parsing the database for IDs that have not yet been processed. When it finds such an individual, it passes its ID and the corresponding parameters to HyperNEAT (if the individual has 0 parents, it needs to be generated randomly, if it has 1 parent, it needs to be mutated, and if it has 2 parents, it needs to be parented). HyperNEAT saves an .xml and a .vxa file in its directory. The files are named after the current experiment name and their Individual ID.
+The HyperNEAT worker is launched and begins parsing the database for IDs that have not yet been processed. When it finds such an individual, it passes its ID and the corresponding parameters to HyperNEAT (if the individual has 0 parents, it needs to be generated randomly, if it has 1 parent, it needs to be mutated, and if it has 2 parents, it needs to be parented). HyperNEAT saves an `.xml` and a `.vxa` file in its directory. The files are named after the current experiment name and their Individual ID.
 
 ### Voxelyze Worker
 
