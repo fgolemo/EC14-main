@@ -144,8 +144,8 @@ class HNWorker(threading.Thread):
         try:
             subprocess.check_call(self.hn_binary + " " + hn_string,
                                   cwd=self.hn_path,
-                                  stdout=open(self.base_path + "hn.stdout.log", "w"),
-                                  stderr=open(self.base_path + "hn.stderr.log", "w"),
+                                  stdout=open(self.base_path + "logs/" + "hn.stdout.log", "w"),
+                                  stderr=open(self.base_path + "logs/" + "hn.stderr.log", "w"),
                                   stdin=open(os.devnull),
                                   shell=True)
         except CalledProcessError as e:

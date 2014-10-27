@@ -134,6 +134,7 @@ class EC14controller():
         os.makedirs(self.base_path + "config/")
         os.makedirs(self.base_path + "population/")
         os.makedirs(self.base_path + "pool/")
+        os.makedirs(self.base_path + "logs/")
         for f in files:
             if os.path.isfile(f):
                 shutil.copy(f, self.base_path + "scripts/")
