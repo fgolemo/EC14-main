@@ -115,7 +115,7 @@ class VoxWorker(threading.Thread):
     def getLastPoolFile(self):
         if self.lastPoolFile == 0:  # this means is hasn't been set
             self.lastPoolFile = 1  # try 1 first, then incr
-            print("looking at pool file:"+ (self.poolFilePath.format(self.lastPoolFile)) )
+            print("looking at pool file:" + (self.poolFilePath.format(self.lastPoolFile)) )
             while (os.path.isfile(self.poolFilePath.format(self.lastPoolFile))):
                 self.lastPoolFile += 1
             if self.debug:
@@ -136,6 +136,8 @@ class VoxWorker(threading.Thread):
 
     def runQsub(self):
         vox_string = self.getExperimentName() + " " + self.lastPoolFile
+        if self.debug:
+            print("VOX: calling submit script like this: " + self.submit_script + " " + vox_string)
         try:
             subprocess.check_call(self.submit_script + " " + vox_string,
                                   stdout=open(self.base_path + "logs/" + "submit.stdout.log", "w"),
@@ -163,6 +165,6 @@ class VoxWorker(threading.Thread):
         # run submit.sh that qsubs the stuff in the recent pool
         self.runQsub()
 
-        #TODO: mark all those individuals in the DB as submitted - do we still need this?
+        # TODO: mark all those individuals in the DB as submitted - do we still need this?
 
         pass
