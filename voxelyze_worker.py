@@ -140,8 +140,8 @@ class VoxWorker(threading.Thread):
             print("VOX: calling submit script like this: " + self.submit_script + " " + vox_string)
         try:
             subprocess.check_call(self.submit_script + " " + vox_string,
-                                  stdout=open(self.base_path + "logs/" + "submit.stdout.log", "w"),
-                                  stderr=open(self.base_path + "logs/" + "submit.stderr.log", "w"),
+                                  stdout=open(self.base_path + "logs/" + "submit."+str(self.lastPoolFile)+".stdout.log", "w"),
+                                  stderr=open(self.base_path + "logs/" + "submit."+str(self.lastPoolFile)+".stderr.log", "w"),
                                   stdin=open(os.devnull),
                                   shell=True)
         except subprocess.CalledProcessError as e:
