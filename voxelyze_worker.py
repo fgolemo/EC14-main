@@ -13,7 +13,7 @@ class VoxWorker(threading.Thread):
     queue = []
     queue_sent = []
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
-    queue_submit_time = 60 * 10  # after 10 minutes just submit the queue as it is
+    queue_force_submit_time = 60 * 10  # after 10 minutes just submit the queue as it is
     base_path = ""
     pool_path = "pool/"
     pool_filename = 'vox.{0}.pool'
@@ -54,6 +54,9 @@ class VoxWorker(threading.Thread):
                     print("VOX: found nothing")
                 waitCounter += time.time() - startTime
                 startTime = time.time()
+                if waitCounter > self.queue_force_submit_time:
+                    self.addToQueue([], True)
+                    waitCounter = 0
 
             if self.debug:
                 print("VOX: sleeping now for " + str(self.pause_time) + "s")
@@ -72,27 +75,33 @@ class VoxWorker(threading.Thread):
         self.stopRequest.set()
         super(VoxWorker, self).join(timeout)
 
-    def addToQueue(self, todos):
+    def addToQueue(self, todos, forced=False):
         """ adds elements to the to-be-voxelyzed queue
         :param todos: simple python list with the names of the individuals to be voxelyzed
+        :param forced: boolean true in case the queue has to be flushed (queued items waiting for too long)
         :return: None
         """
         if self.debug:
             print ("VOX: found " + str(len(todos)) + " new individuals.")
 
         for todo in todos:
-            if (not todo in self.queue and not todo in self.queue_sent):
+            if not todo in self.queue and not todo in self.queue_sent:
                 self.queue.append(todo)
 
-        if len(self.queue) > self.queue_length:
+        if len(self.queue) > self.queue_length or forced:
             if self.debug:
                 print ("vox: got " + str(
                     self.queue_length) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
             self.sendQueue(self.queue[:self.queue_length])
 
-            # now splice them apart, move the sent id into a separate list
-            self.queue_sent += self.queue[:self.queue_length]
-            self.queue = self.queue[self.queue_length:]  # keep only the first N elements in list
+            if not forced:
+                # now splice them apart, move the sent id into a separate list
+                self.queue_sent += self.queue[:self.queue_length]
+                self.queue = self.queue[self.queue_length:]  # keep only the first N elements in list
+            else:
+                # just purge everything
+                self.queue_sent += self.queue
+                self.queue = []
         else:
             if self.debug:
                 print("VOX: queue not full yet, waiting for more before submitting")
