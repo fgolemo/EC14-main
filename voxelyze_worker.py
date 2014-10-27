@@ -43,19 +43,17 @@ class VoxWorker(threading.Thread):
         startTime = time.time()
         while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             todos = self.checkForTodos()
-
-            if len(todos) > 0:
-                if self.debug:
-                    print("VOX: found " + str(len(todos)) + " todos")
-                self.addToQueue(todos)
+            addedSomethingNew = self.addToQueue(todos)
+            if addedSomethingNew:
+                self.processQueue()
                 waitCounter = 0
             else:
-                if self.debug:
-                    print("VOX: found nothing")
                 waitCounter += time.time() - startTime
                 startTime = time.time()
                 if waitCounter > self.queue_force_submit_time:
-                    self.addToQueue([], True)
+                    if self.debug:
+                        print("VOX: slept long enough... now FLUSHING THE QUEUE")
+                    self.processQueue(True)
                     waitCounter = 0
 
             if self.debug:
@@ -75,19 +73,27 @@ class VoxWorker(threading.Thread):
         self.stopRequest.set()
         super(VoxWorker, self).join(timeout)
 
-    def addToQueue(self, todos, forced=False):
+    def addToQueue(self, todos):
+        new = 0
+        for todo in todos:
+            if not todo in self.queue and not todo in self.queue_sent:
+                self.queue.append(todo)
+                new += 1
+        if (new > 0):
+            if self.debug:
+                print("VOX: found " + str(new) + " new individuals.")
+            return True
+        else:
+            if self.debug:
+                print("VOX: found nothing new")
+            return False
+
+    def processQueue(self, forced=False):
         """ adds elements to the to-be-voxelyzed queue
         :param todos: simple python list with the names of the individuals to be voxelyzed
         :param forced: boolean true in case the queue has to be flushed (queued items waiting for too long)
         :return: None
         """
-        if self.debug:
-            print ("VOX: found " + str(len(todos)) + " new individuals.")
-
-        for todo in todos:
-            if not todo in self.queue and not todo in self.queue_sent:
-                self.queue.append(todo)
-
         if len(self.queue) > self.queue_length or forced:
             if self.debug:
                 print ("vox: got " + str(
@@ -149,8 +155,12 @@ class VoxWorker(threading.Thread):
             print("VOX: calling submit script like this: " + self.submit_script + " " + vox_string)
         try:
             subprocess.check_call(self.submit_script + " " + vox_string,
-                                  stdout=open(self.base_path + "logs/" + "submit."+str(self.lastPoolFile)+".stdout.log", "w"),
-                                  stderr=open(self.base_path + "logs/" + "submit."+str(self.lastPoolFile)+".stderr.log", "w"),
+                                  stdout=open(
+                                      self.base_path + "logs/" + "submit." + str(self.lastPoolFile) + ".stdout.log",
+                                      "w"),
+                                  stderr=open(
+                                      self.base_path + "logs/" + "submit." + str(self.lastPoolFile) + ".stderr.log",
+                                      "w"),
                                   stdin=open(os.devnull),
                                   shell=True)
         except subprocess.CalledProcessError as e:
