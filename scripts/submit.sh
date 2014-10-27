@@ -1,10 +1,11 @@
+#!/bin/sh
 module load stopos
-stopos create -p dead.pool
-stopos add -p dead.pool $1
+stopos create -p dead.${2}.pool
+stopos add -p dead.${2}.pool $1
 
-workdir=${HOME}/EC14-main/scripts
+scriptdir=${HOME}/EC14-main/scripts
 
-JOB_ID=`qsub -o logs -e logs -t ${workdir}/run_vox.sh`
+JOB_ID=`qsub -o logs -e logs ${scriptdir}/run_vox.sh dead.${2}.pool`
 
 #display job queue
 showq -u $USER

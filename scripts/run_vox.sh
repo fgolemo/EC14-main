@@ -1,9 +1,11 @@
+#!/bin/sh
 module load stopos
 poolname=$1
 
+voxdir=~/EC14-voxelyze/voxelyzeMain
+cd $voxdir
+
 ncores=`sara-get-num-cores`
-BASEDIR=`pwd`
-cd $BASEDIR
 
 for ((i=1; i<=ncores; i++)) ; do
   stopos next -p $poolname
