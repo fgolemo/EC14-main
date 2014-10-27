@@ -14,6 +14,7 @@ class EC14controller():
     base_path = ""
     db = None
     dbString = ""
+    dbParams = ""
     hnWorker = None
     voxWorker = None
     ppWorker = None
@@ -133,9 +134,9 @@ class EC14controller():
         os.makedirs(self.base_path + "config/")
         os.makedirs(self.base_path + "population/")
         os.makedirs(self.base_path + "pool/")
-        for file in files:
-            if os.path.isfile(file):
-                shutil.copy(file, self.base_path + "scripts/")
+        for f in files:
+            if os.path.isfile(f):
+                shutil.copy(f, self.base_path + "scripts/")
 
 
     def installConfig(self):
@@ -150,7 +151,7 @@ class EC14controller():
         self.pop_size = self.askNumber("Initial population size", 100)
         self.pop_random = self.askPopulationRandom()
         self.pop_random_start_end = (0, 0)
-        if (self.pop_random):
+        if self.pop_random:
             self.pop_random_start_end = self.askPopulationRandomStartEnd()
         self.arena_x = self.askNumber("Arena size (x)", 5)
         self.arena_y = self.askNumber("Arena size (y)", 5)
@@ -200,7 +201,7 @@ class EC14controller():
         while ans not in ["b", "i", ""]:
             print "That is not a valid answer. Please respond with either the letter 'b' or 'i'",
             ans = raw_input(question).lower()
-        if (ans == ''):
+        if ans == '':
             ans = 'i'
         return ans
 
@@ -214,7 +215,7 @@ class EC14controller():
 
         print "Birth time random window set to " + str(starttime) + " - " + str(endtime) + "s"
 
-        return (starttime, endtime)
+        return starttime, endtime
 
 
     def getDB(self):
@@ -225,7 +226,7 @@ class EC14controller():
         self.db = DB(self.dbString, self.end_time, self.indiv_max_age)
         self.dbParams = (self.dbString, self.end_time, self.indiv_max_age)
 
-        if (self.newExperiment):
+        if self.newExperiment:
             self.db.createTables()
 
     def createPopulaton(self):

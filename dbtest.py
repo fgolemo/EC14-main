@@ -3,6 +3,7 @@ from db import DB
 db = DB("ec141:ec141@192.168.0.44/ec141", 100, 50)
 db.dropTables()
 db.createTables()
+quit()
 print(1)
 id1 = db.createIndividual(1,2,3)
 id2 = db.createIndividual(2,3,4)

@@ -1,3 +1,4 @@
+import shutil
 from subprocess import CalledProcessError
 import threading, time, subprocess, os
 from db import DB
@@ -12,8 +13,13 @@ class HNWorker(threading.Thread):
     base_path = ""
     pop_path = "population/"
     hn_path = "~/EC14-HyperNEAT/out/"
-    # hn_binary = "./HyperNEAT"
-    hn_binary = "python HyperNEATdummy.py"
+    hn_binary = "./Hypercube_NEAT"
+    hn_params_file = "softbotTest.dat"
+    suffix_genome = "_genome.xml"
+    suffix_vox = "_vox.vxa"
+    hn_trash_file = "Softbots--{0}---gen-Genchamp-AvgFit.txt"
+    hn_stray_files =["md5sumTMP.txt"]
+    # hn_binary = "python HyperNEATdummy.py"
     debug = False
     db = None
 
@@ -22,6 +28,8 @@ class HNWorker(threading.Thread):
         self.db = DB(dbParams[0], dbParams[1], dbParams[2])
         self.base_path = base_path
         # individuals will be found here: self.base_path + self.pop_path + str(indiv)
+        self.hn_path = os.path.expanduser(self.hn_path)
+        self.pop_path = os.path.expanduser(self.base_path + self.pop_path)
 
         self.debug = debug
         self.stopRequest = threading.Event()
@@ -32,27 +40,28 @@ class HNWorker(threading.Thread):
         """
         waitCounter = 0
         startTime = time.time()
-        while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
+        while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             todos = self.checkForTodos()
 
-            if (len(todos) > 0):
-                if (self.debug):
+            if len(todos) > 0:
+                if self.debug:
                     print("HN: found " + str(len(todos)) + " todos")
                 self.execHN(todos)
                 self.cleanupAfterHN(todos)
                 self.preprocessBeforeVox(todos)
                 waitCounter = 0
             else:
-                if (self.debug):
+                if self.debug:
                     print("HN: found no todos")
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
-            if (self.debug):
+            if self.debug:
                 print("HN: sleeping now for " + str(self.pause_time) + "s")
             self.stopRequest.wait(self.pause_time)
 
-        # TODO: final steps after kill signal
+        # TODO: clean the HyperNEAT output folder, leave only the binary and the parameter file
+        # TODO: i.e. tar+gzip them or copy them to archive folder in experiment
         print ("Thread: got exist signal... here I can do some last cleanup stuff before quitting")
 
     def join(self, timeout=None):
@@ -60,17 +69,16 @@ class HNWorker(threading.Thread):
         :param timeout: not implemented yet
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print("HN: got kill request for thread")
         self.stopRequest.set()
         super(HNWorker, self).join(timeout)
-
 
     def checkForTodos(self):
         """ check the DB or the filesystem and look if there are any new individuals that need to be hyperneated
         :return: simple python list with the names of the individuals that are new and need to be hyperneated
         """
-        if (self.debug):
+        if self.debug:
             print("HN: checking for todos")
 
         todos = self.db.getHNtodos()
@@ -82,7 +90,7 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals to be hyperneated
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print("HN: executing hyperneat for the following individuals:")
             print(todos)
 
@@ -90,7 +98,7 @@ class HNWorker(threading.Thread):
             hn_params = " ".join(self.db.getParents(indiv))  # parent will be a list of size 0|1|2
             print("HN: creating individual (calling HN binary): " + str(indiv) )
             self.runHN(indiv, hn_params)
-            print("HN: finished creating individual: " + str(indiv) )
+            print("HN: finished creating individual: " + str(indiv))
             # TODO (later): error check the hyperneat output
 
         pass
@@ -100,7 +108,7 @@ class HNWorker(threading.Thread):
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print("HN: cleaning up")
 
         # TODO: run the real hyperneat on lisa, list all the stray files that HN generates
@@ -108,31 +116,34 @@ class HNWorker(threading.Thread):
         # probably the todos parameter is not necessary, but keep it for now
         pass
 
-
     def preprocessBeforeVox(self, todos):
         """ run all the freshly-generated individuals through preprocessing to place them in an arena etc.
         :param todos: list with strings containing the names of the individuals from the last HN run
         :return: None
         """
-        if (self.debug):
+        if self.debug:
             print("HN: preprocessing")
-
         for indiv in todos:
-            # TODO: move the final files somewhere else
+            shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
+            shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
+            os.remove(self.hn_path + self.hn_trash_file.format(indiv))
             self.db.markAsHyperneated(indiv)
+
+        for f in self.hn_stray_files:
+            os.remove(self.hn_path + f)
+
         self.db.flush()
         pass
 
-
     def runHN(self, indiv, hn_params):
         """ run hyperneat with its parameters
-        :param hn_params:
-        :return: error code
+        :param hn_params: string with either 0, 1 or 2 parents, just the IDs (no file suffix), separated by a space
+        :return: None
         """
-        hn_string = "-I params.dat -R $RANDOM -O " + str(indiv) + " -ORG " + hn_params
+        hn_string = "-I " + self.hn_params_file + " -R $RANDOM -O " + str(indiv) + " -ORG " + hn_params
         try:
             subprocess.check_call(self.hn_binary + " " + hn_string,
-                                  cwd=os.path.expanduser(self.hn_path),
+                                  cwd=self.hn_path,
                                   stdout=open(self.base_path + "hn.stdout.log", "w"),
                                   stderr=open(self.base_path + "hn.stderr.log", "w"),
                                   stdin=open(os.devnull),
@@ -140,26 +151,6 @@ class HNWorker(threading.Thread):
         except CalledProcessError as e:
             print ("HN: during HN execution there was an error:")
             print (str(e.returncode))
-            quit()  # TODO: better error handling, but so far, we dont allow HN to fail
-
-# Function keeps checking database for new encounters:
-
-# PY#
-# while True:
-#
-# CloseRobots(distance, waittime, childtime)
-#
-# GetParents(endtime) #TODO Change for new code
-#
-# 	if parents == NULL:
-# 		continue
-#     else:
-#         spawn_child()
-	
-
-
-	
-    
-
-
-
+            quit()
+            # TODO: better error handling, but so far, we dont allow HN to fail -
+            # TODO: and if it fails, we can check the logs immediately

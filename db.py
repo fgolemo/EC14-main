@@ -15,14 +15,14 @@ class DB():
         self.maxAge = maxAge
 
         components = connectionString.split("@")
-        if (len(components) != 2):
+        if len(components) != 2:
             raise ValueError("connection string did have more or less than 1 @ symbol")
 
         auth = components[0].split(":")
         hostdb = components[1].split("/")
-        if (len(auth) != 2):
+        if len(auth) != 2:
             raise ValueError("connection string did have more or less than 1 : symbol")
-        if (len(hostdb) != 2):
+        if len(hostdb) != 2:
             raise ValueError("connection string did have more or less than 1 / symbol")
 
         config = {
