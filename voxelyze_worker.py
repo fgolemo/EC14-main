@@ -44,8 +44,8 @@ class VoxWorker(threading.Thread):
         while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
             todos = self.checkForTodos()
             addedSomethingNew = self.addToQueue(todos)
+            forced = False
             if addedSomethingNew:
-                self.processQueue()
                 waitCounter = 0
             else:
                 waitCounter += time.time() - startTime
@@ -53,9 +53,9 @@ class VoxWorker(threading.Thread):
                 if waitCounter > self.queue_force_submit_time:
                     if self.debug:
                         print("VOX: slept long enough... now FLUSHING THE QUEUE")
-                    self.processQueue(True)
+                    forced = True
                     waitCounter = 0
-
+            self.processQueue(forced)
             if self.debug:
                 print("VOX: sleeping now for " + str(self.pause_time) + "s")
             self.stopRequest.wait(self.pause_time)
