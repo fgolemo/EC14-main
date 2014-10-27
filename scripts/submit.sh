@@ -6,7 +6,7 @@
 base=${HOME}/${1}
 
 pool=dead${2}.pool
-population=/${1}/population #have to skip home, because qsub replaces it
+population=/${1}/population/ #have to skip home, because qsub replaces it
 pool_input=${base}/pool/vox.${2}.pool
 
 module load stopos
