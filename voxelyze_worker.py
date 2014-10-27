@@ -135,7 +135,7 @@ class VoxWorker(threading.Thread):
         return os.path.basename(self.base_path[:-1])
 
     def runQsub(self):
-        vox_string = self.getExperimentName() + " " + self.lastPoolFile
+        vox_string = self.getExperimentName() + " " + str(self.lastPoolFile)
         if self.debug:
             print("VOX: calling submit script like this: " + self.submit_script + " " + vox_string)
         try:
