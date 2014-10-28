@@ -1,10 +1,12 @@
+## 27 Oct Meeting
+
 This will affect the pop:
 * Density 
 * Lifetime (relates to density)
 * Fertility distance
 * How often they can procreate
 
-Meeting Notes:
+### Meeting Notes:
 * **We need to see what the arena size values mean**
 * Assign a scale to the individuals and their walking distance
 * Assign weights to find size, to be able to tell where and how big the robots are in the arena
@@ -32,4 +34,3 @@ Meeting Notes:
 * Nick Cheney's distance val. can be set as the upper bound
 
 ## Next Meeting 3rd Nov @ 1PM
-
