@@ -135,7 +135,7 @@ class DB():
     def createIndividual(self, born, x, y):
         self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0);")
         individual_id = self.getLastInsertID()
-        self.cur.execute("INSERT INTO traces VALUES (NULL, " + individual_id + ", 0, '" + str(x) + "', '" + str(
+        self.cur.execute("INSERT INTO traces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
             y) + "', 0, 1);")
         self.flush()
         print ("created individual: " + individual_id)

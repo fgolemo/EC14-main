@@ -129,6 +129,7 @@ class EC14controller():
         os.makedirs(self.base_path + "scripts/")
         os.makedirs(self.base_path + "config/")
         os.makedirs(self.base_path + "population/")
+        os.makedirs(self.base_path + "traces_tmp/")
         os.makedirs(self.base_path + "pool/")
         os.makedirs(self.base_path + "logs/")
 
@@ -145,7 +146,7 @@ class EC14controller():
         db_string = self.askDatabaseString()
         self.dbString = db_string
         self.end_time = self.askNumber("Experiment time limit (in seconds)", 120)
-        self.indiv_max_age = self.askNumber("Lifetime of an individual (in seconds)", 5)
+        self.indiv_max_age = self.askNumber("Lifetime of an individual (in seconds, current max: 25s)", 5)
         self.pop_size = self.askNumber("Initial population size", 100)
         self.pop_random = self.askPopulationRandom()
         self.pop_random_start_end = (0, 0)
@@ -276,10 +277,10 @@ class EC14controller():
 
 
         # launch workers
-        # self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
-        # self.hnWorker.start()
-        # self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
-        # self.voxWorker.start()
+        self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
+        self.hnWorker.start()
+        self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
+        self.voxWorker.start()
         self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.base_path, True)
         self.ppWorker.start()
 

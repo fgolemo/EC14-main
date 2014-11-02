@@ -1,7 +1,10 @@
+import ConfigParser
+import shutil
 import threading, time, os
 from db import DB
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
+from preprocessing import Preprocessor
 
 
 class PostprocessingWorker(threading.Thread):
@@ -12,9 +15,17 @@ class PostprocessingWorker(threading.Thread):
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
     pop_path = "population/"
+    traces_path = "traces_tmp/"
     debug = False
     db = None
     queue = []
+    vox_preamble = 8  # number of lines that voxelyze adds before the actual output in a trace file
+    config = ConfigParser.RawConfigParser()
+    arena_x = 0
+    arena_y = 0
+    arena_type = ""
+    end_time = 0
+    pp = Preprocessor()
 
     def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
@@ -23,6 +34,11 @@ class PostprocessingWorker(threading.Thread):
         self.debug = debug
         self.stopRequest = threading.Event()
         self.observer = Observer()
+        self.config.read(self.base_path + 'config/config.ini')
+        self.arena_x = self.config.getfloat('Arena', 'arena_x')
+        self.arena_y = self.config.getfloat('Arena', 'arena_y')
+        self.arena_type = self.config.get('Arena', 'arena_type')
+        self.end_time = self.config.getfloat('Experiment', 'end_time')
 
     def run(self):
         """ main thread function
@@ -31,14 +47,15 @@ class PostprocessingWorker(threading.Thread):
         waitCounter = 0
         startTime = time.time()
 
-        self.observer.schedule(ChangeHandler(self), path=os.path.normpath(self.base_path + self.pop_path))
+        self.observer.schedule(ChangeHandler(self), path=os.path.normpath(self.base_path + self.traces_path))
         print("PP: starting file observer on path:\n" + self.base_path + self.pop_path)
         self.observer.start()
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
             if (len(self.queue) > 0):
                 queue_partition = self.queue
-                self.queue = self.queue[len(queue_partition):] # to make sure that in the short fraction of time no new file was added
+                self.queue = self.queue[len(
+                    queue_partition):]  # to make sure that in the short fraction of time no new file was added
                 if (self.debug):
                     print("PP: found " + str(len(queue_partition)) + " todos")
                 self.adjustTraceFile(queue_partition)
@@ -69,14 +86,25 @@ class PostprocessingWorker(threading.Thread):
         self.observer.stop()
         super(PostprocessingWorker, self).join(timeout)
 
+    def getIDfromTrace(self, file_path):
+        path, filename = os.path.split(file_path)
+        name_parts = filename.split(".")
+        return name_parts[0]
+
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.
         :param todos: list of strings with the individual IDs
         :return: None
         """
-        # TODO: implement (Tom's code)
 
-        pass
+        for todo in todos:
+            id = self.getIDfromTrace(todo)
+            # get initial coordinates from DB
+            indiv = self.db.getIndividual(id)
+            first_trace = self.db.getFirstTrace(id)
+            self.pp.addStartingPointArenaAndTime(todo, 8, self.arena_x, self.arena_y, self.arena_type,
+                                                 first_trace["x"], first_trace["y"], indiv["born"], self.end_time)
+
 
     def calculateOffspring(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
@@ -92,9 +120,9 @@ class PostprocessingWorker(threading.Thread):
         :param todos: list of strings with the individual IDs
         :return: None
         """
-        # TODO: implement
-
-        pass
+        for indiv in todos:
+            id = self.getIDfromTrace(indiv)
+            shutil.move(indiv, self.base_path + self.pop_path + str(id) + ".trace")
 
     def addFile(self, path):
         self.queue.append(path)
