@@ -28,6 +28,7 @@ class EC14controller():
     arena_y = 0
     arena_type = ""
     config = None
+    path_prefix = "~/EC14-Exp-"
 
     random_granularity = 10.0
 
@@ -57,7 +58,7 @@ class EC14controller():
         while exp_name == '' and os.path.isdir(exp_name) == True:
             exp_name = raw_input("That name is taken or empty, please try again: ")
 
-        exp_path = os.path.expanduser("~/EC14-Exp-" + exp_name + "/")
+        exp_path = exp_name
 
         return exp_path
 
@@ -106,19 +107,19 @@ class EC14controller():
         db_given = raw_input("Are you continuing with an existing Experiment? [y/N]: ").lower()
         while db_given not in self.yes and db_given not in self.no:
             print "That is not a valid answer.",
-            db_given = raw_input("Are you continuing with an existing database (type Y for yes and N for no)? ").lower()
+            db_given = raw_input("type Y for yes and N for no: ").lower()
 
-        # Ask user to specify population .xml file path and making it writable to:
         if db_given in self.yes:
-            base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Exp-1):")
-            while not os.path.exists(os.path.expanduser(base_path)):
+            # base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Exp-1):")
+            base_path = raw_input("Name of the experiment (will look for " + self.path_prefix + "[name] ):")
+            while not os.path.exists(os.path.expanduser(self.path_prefix + base_path)):
                 base_path = raw_input("I can't find that folder, please try again:")
         else:
             self.newExperiment = True
             base_path = self.askExperimentName()
 
-        print "Working directory: " + base_path
-        self.base_path = os.path.expanduser(base_path)
+        self.base_path = os.path.expanduser(self.path_prefix + base_path + "/")
+        print "Working directory: " + self.base_path
 
     def installFiles(self):
         """ Copy script files into experiment directory and saves config
@@ -241,7 +242,7 @@ class EC14controller():
             self.db.createIndividual(birth, x, y)
 
     def readConfig(self):
-        print("config path: "+self.base_path + 'config/config.ini')
+        print("config path: " + self.base_path + 'config/config.ini')
         self.config.read(self.base_path + 'config/config.ini')
 
         if (self.pop_size == 0):  # this is the case, when the experiment exists

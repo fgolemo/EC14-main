@@ -14,6 +14,7 @@ class PostprocessingWorker(threading.Thread):
     pop_path = "population/"
     debug = False
     db = None
+    queue = []
 
     def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
@@ -30,33 +31,31 @@ class PostprocessingWorker(threading.Thread):
         waitCounter = 0
         startTime = time.time()
 
-        self.observer.schedule(ChangeHandler(), path=os.path.normpath(self.base_path+self.pop_path) )
-        print("PP: startin file observer on path:\n" + self.base_path+self.pop_path)
+        self.observer.schedule(ChangeHandler(self), path=os.path.normpath(self.base_path + self.pop_path))
+        print("PP: starting file observer on path:\n" + self.base_path + self.pop_path)
         self.observer.start()
+
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
-            # todos = self.checkForTodos()
-            #
-            # if (len(todos) > 0):
-            #     if (self.debug):
-            #         print("PP: found " + str(len(todos)) + " todos")
-            #     self.adjustTraceFile(todos)
-            #     self.calculateOffspring(todos)
-            #     self.moveFiles(todos)
-            #     waitCounter = 0
-            # else:
-            #     if (self.debug):
-            #         print("PP: found nothing")
+            if (len(self.queue) > 0):
+                queue_partition = self.queue
+                self.queue = self.queue[len(queue_partition):] # to make sure that in the short fraction of time no new file was added
+                if (self.debug):
+                    print("PP: found " + str(len(queue_partition)) + " todos")
+                self.adjustTraceFile(queue_partition)
+                self.calculateOffspring(queue_partition)
+                self.moveFiles(queue_partition)
+                waitCounter = 0
+            else:
+                if (self.debug):
+                    print("PP: found nothing")
+                waitCounter += time.time() - startTime
+                startTime = time.time()
 
-            waitCounter += time.time() - startTime
-            startTime = time.time()
-
-            #
             if (self.debug):
                 print("PP: sleeping now for " + str(self.pause_time) + "s")
             self.stopRequest.wait(self.pause_time)
 
-        # TODO: final steps after kill signal
-        print ("Thread: got exist signal... here I can do some last cleanup stuff before quitting")
+        print ("PP: got exit signal... cleaning up")
         self.observer.join()
 
     def join(self, timeout=None):
@@ -69,20 +68,6 @@ class PostprocessingWorker(threading.Thread):
         self.stopRequest.set()
         self.observer.stop()
         super(PostprocessingWorker, self).join(timeout)
-
-    def checkForTodos(self):
-        """ checks the filesystem if there are any new files created after a job batch has finished on Lisa
-        :return: simple python list with the names of the individuals that finished voxelyzation
-        """
-        if (self.debug):
-            print("PP: checking for todos")
-
-        todos = []
-
-
-        # TODO: implement
-
-        return todos
 
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.
@@ -111,9 +96,17 @@ class PostprocessingWorker(threading.Thread):
 
         pass
 
+    def addFile(self, path):
+        self.queue.append(path)
+
 
 class ChangeHandler(PatternMatchingEventHandler):
-    patterns=["*.trace","*.txt"]
+    patterns = ["*.trace"]
+    pp_worker = None
+
+    def __init__(self, pp_worker, patterns=None, ignore_patterns=None, ignore_directories=False, case_sensitive=False):
+        self.pp_worker = pp_worker
+        super(ChangeHandler, self).__init__(patterns, ignore_patterns, ignore_directories, case_sensitive)
 
     def process(self, event):
         """
@@ -124,7 +117,8 @@ class ChangeHandler(PatternMatchingEventHandler):
         event.src_path
             path/to/observed/file
         """
-        print ("PP: found new file:"+event.src_path)
+        print ("PP: found new trace file:" + event.src_path)
+        self.pp_worker.addFile(event.src_path)
 
     def on_created(self, event):
         self.process(event)
