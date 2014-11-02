@@ -13,7 +13,7 @@ class VoxWorker(threading.Thread):
     queue = []
     queue_sent = []
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
-    queue_force_submit_time = 60 * 10  # after 10 minutes just submit the queue as it is
+    queue_force_submit_time = 20  # after 10 minutes just submit the queue as it is
     base_path = ""
     pool_path = "pool/"
     pool_filename = 'vox.{0}.pool'
