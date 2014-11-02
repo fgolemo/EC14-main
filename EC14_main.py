@@ -208,7 +208,7 @@ class EC14controller():
         """
 
         starttime = self.get_int("Earliest possible birth time (in seconds) [0]: ", 0)
-        endtime = self.get_int("Latest possible birth time (in seconds) [10]: ", 3)
+        endtime = self.get_int("Latest possible birth time (in seconds) [3]: ", 3)
 
         print "Birth time random window set to " + str(starttime) + " - " + str(endtime) + "s"
 
@@ -275,10 +275,10 @@ class EC14controller():
 
 
         # launch workers
-        self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
-        self.hnWorker.start()
-        self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
-        self.voxWorker.start()
+        # self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
+        # self.hnWorker.start()
+        # self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
+        # self.voxWorker.start()
         self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.base_path, True)
         self.ppWorker.start()
 
