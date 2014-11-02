@@ -152,7 +152,7 @@ class VoxWorker(threading.Thread):
     def runQsub(self):
         vox_string = self.getExperimentName() + " " + str(self.lastPoolFile)
         if self.debug:
-            print("VOX: calling submit script like this: " + self.submit_script + " " + vox_string)
+            print("VOX: calling submit script like this:\n" + self.submit_script + " " + vox_string)
         try:
             subprocess.check_call(self.submit_script + " " + vox_string,
                                   stdout=open(

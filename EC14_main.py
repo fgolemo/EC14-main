@@ -118,19 +118,20 @@ class EC14controller():
             base_path = self.askExperimentName()
 
         print "Working directory: " + base_path
-        self.base_path = os.path.expanduser(base_path) + "/"
+        self.base_path = os.path.expanduser(base_path)
 
     def installFiles(self):
         """ Copy script files into experiment directory and saves config
         :return: None
         """
 
-        files = glob.iglob("./*.py")
         os.makedirs(self.base_path + "scripts/")
         os.makedirs(self.base_path + "config/")
         os.makedirs(self.base_path + "population/")
         os.makedirs(self.base_path + "pool/")
         os.makedirs(self.base_path + "logs/")
+
+        files = glob.iglob("./*.py")
         for f in files:
             if os.path.isfile(f):
                 shutil.copy(f, self.base_path + "scripts/")
@@ -143,14 +144,14 @@ class EC14controller():
         db_string = self.askDatabaseString()
         self.dbString = db_string
         self.end_time = self.askNumber("Experiment time limit (in seconds)", 120)
-        self.indiv_max_age = self.askNumber("Lifetime of an individual (in seconds)", 50)
+        self.indiv_max_age = self.askNumber("Lifetime of an individual (in seconds)", 5)
         self.pop_size = self.askNumber("Initial population size", 100)
         self.pop_random = self.askPopulationRandom()
         self.pop_random_start_end = (0, 0)
         if self.pop_random:
             self.pop_random_start_end = self.askPopulationRandomStartEnd()
-        self.arena_x = self.askNumber("Arena size (x)", 5)
-        self.arena_y = self.askNumber("Arena size (y)", 5)
+        self.arena_x = self.askNumber("Arena size (x)", 1)
+        self.arena_y = self.askNumber("Arena size (y)", 1)
         self.arena_type = self.askArenaType()
 
         self.config.add_section('DB')
@@ -207,7 +208,7 @@ class EC14controller():
         """
 
         starttime = self.get_int("Earliest possible birth time (in seconds) [0]: ", 0)
-        endtime = self.get_int("Latest possible birth time (in seconds) [10]: ", 10)
+        endtime = self.get_int("Latest possible birth time (in seconds) [10]: ", 3)
 
         print "Birth time random window set to " + str(starttime) + " - " + str(endtime) + "s"
 
