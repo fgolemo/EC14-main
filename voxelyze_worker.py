@@ -50,7 +50,7 @@ class VoxWorker(threading.Thread):
             else:
                 waitCounter += time.time() - startTime
                 startTime = time.time()
-                if waitCounter > self.queue_force_submit_time:
+                if len(self.queue) > 0 and waitCounter > self.queue_force_submit_time:
                     if self.debug:
                         print("VOX: slept long enough... now FLUSHING THE QUEUE")
                     forced = True
