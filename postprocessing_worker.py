@@ -47,8 +47,9 @@ class PostprocessingWorker(threading.Thread):
         waitCounter = 0
         startTime = time.time()
 
-        self.observer.schedule(ChangeHandler(self), path=os.path.normpath(self.base_path + self.traces_path))
-        print("PP: starting file observer on path:\n" + self.base_path + self.pop_path)
+	obs_path = os.path.normpath(self.base_path + self.traces_path)
+        self.observer.schedule(ChangeHandler(self), path=obs_path)
+        print("PP: starting file observer on path:\n" + obs_path)
         self.observer.start()
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):

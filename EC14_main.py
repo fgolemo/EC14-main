@@ -30,7 +30,7 @@ class EC14controller():
     config = None
     path_prefix = "~/EC14-Exp-"
 
-    random_granularity = 10.0
+    random_granularity = 100.0
 
     yes = {'yes', 'y', 'ye'}
     no = {'no', 'n', ''}
@@ -42,9 +42,9 @@ class EC14controller():
         while True:
             line = raw_input(msg) or default
             try:
-                return int(line)
+		return float(line)
             except ValueError:
-                print line, "is not a valid number"
+                print line, "is not a valid float number"
 
     def askExperimentName(self):
         """ asks the user for the experiment name/location
@@ -147,7 +147,7 @@ class EC14controller():
         self.dbString = db_string
         self.end_time = self.askNumber("Experiment time limit (in seconds)", 120)
         self.indiv_max_age = self.askNumber("Lifetime of an individual (in seconds, current max: 25s)", 5)
-        self.pop_size = self.askNumber("Initial population size", 100)
+        self.pop_size = int(self.askNumber("Initial population size", 100))
         self.pop_random = self.askPopulationRandom()
         self.pop_random_start_end = (0, 0)
         if self.pop_random:
@@ -252,7 +252,7 @@ class EC14controller():
             self.arena_type = self.config.get('Arena', 'arena_type')
             self.end_time = self.config.getfloat('Experiment', 'end_time')
             self.indiv_max_age = self.config.getfloat('Experiment', 'indiv_max_age')
-            self.pop_size = self.config.getint('Experiment', 'pop_size')
+            self.pop_size = int(self.config.getint('Experiment', 'pop_size'))
             self.pop_random = self.config.get('Experiment', 'pop_random')
             self.pop_random_start_end = (
                 self.config.getfloat('Experiment', 'pop_random_start'),
@@ -277,10 +277,10 @@ class EC14controller():
 
 
         # launch workers
-        self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
-        self.hnWorker.start()
-        self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
-        self.voxWorker.start()
+        #self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
+        #self.hnWorker.start()
+        #self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
+        #self.voxWorker.start()
         self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.base_path, True)
         self.ppWorker.start()
 
