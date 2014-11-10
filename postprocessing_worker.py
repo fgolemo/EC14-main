@@ -47,7 +47,7 @@ class PostprocessingWorker(threading.Thread):
         waitCounter = 0
         startTime = time.time()
 
-	obs_path = os.path.normpath(self.base_path + self.traces_path)
+        obs_path = os.path.normpath(self.base_path + self.traces_path)
         self.observer.schedule(ChangeHandler(self), path=obs_path)
         print("PP: starting file observer on path:\n" + obs_path)
         self.observer.start()
@@ -60,6 +60,7 @@ class PostprocessingWorker(threading.Thread):
                 if (self.debug):
                     print("PP: found " + str(len(queue_partition)) + " todos")
                 self.adjustTraceFile(queue_partition)
+                self.traceToDatabase(queue_partition)
                 self.calculateOffspring(queue_partition)
                 self.moveFiles(queue_partition)
                 waitCounter = 0
@@ -94,7 +95,7 @@ class PostprocessingWorker(threading.Thread):
 
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.
-        :param todos: list of strings with the individual IDs
+        :param todos: list of strings with the individual trace filepaths
         :return: None
         """
 
@@ -103,9 +104,26 @@ class PostprocessingWorker(threading.Thread):
             # get initial coordinates from DB
             indiv = self.db.getIndividual(id)
             first_trace = self.db.getFirstTrace(id)
-            self.pp.addStartingPointArenaAndTime(todo, 8, self.arena_x, self.arena_y, self.arena_type,
+            self.pp.addStartingPointArenaAndTime(todo, self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
                                                  first_trace["x"], first_trace["y"], indiv["born"], self.end_time)
 
+    def traceToDatabase(self, todos):
+        """ put the individuals into the database
+        :param todos: list of strings with the individual trace filepaths
+        :return: None
+        """
+
+        for todo in todos:
+            id = self.getIDfromTrace(todo)
+            with open(todo, 'r') as inputFile:
+                traces = []
+
+                fileAsList = inputFile.readlines()
+                for i in range(0, len(fileAsList)):
+                    traceLine = fileAsList[i].split()
+                    traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4]])
+
+            self.db.addTraces(id, traces)
 
     def calculateOffspring(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way

@@ -94,14 +94,14 @@ class Preprocessor():
                 # convert the elements into strings again
                 coordinates = self.stringify(coordinates)
 
-                fileAsList[i] = "\t".join(coordinates)+"\n"
-                # out.append("\t".join(coordinates)+"\n")
+                # fileAsList[i] = "\t".join(coordinates)+"\n"
+                out.append("\t".join(coordinates)+"\n")
 
             inputFile.close()
 
         with open(filename, 'w') as outputFile:
-            outputFile.write("".join(fileAsList))
-            #outputFile.write("".join(out))
+            # outputFile.write("".join(fileAsList))
+            outputFile.write("".join(out))
             outputFile.close()
 
 

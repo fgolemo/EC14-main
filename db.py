@@ -142,13 +142,20 @@ class DB():
 
         return individual_id
 
+    def addTraces(self, id, traces):
+        firstTrace = self.getFirstTrace(id)
+        insertSting = "INSERT INTO traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
+        print ("inserting {len} trace lines for individual {id}".format(len=len(traces), id=id))
+        self.cur.executemany(insertSting, traces)
+        self.cur.execute("DELETE FROM traces WHERE id={id};".format(id = firstTrace["id"]))
+        self.flush()
+        print ("done inserting")
 
     def getIndividual(self, id):
         self.flush()
         self.cur.execute("SELECT * FROM individuals AS i WHERE i.id = '" + str(id) + "' ")
         # return dict(zip(self.keys_individuals, self.cur.fetchone()))
         return self.cur.fetchone()
-
 
     def getTraces(self, id):
         self.flush()
