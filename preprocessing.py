@@ -54,13 +54,13 @@ class Preprocessor():
 
     def correctArenaInfinite(self, coordinates, arenaX, arenaY):
         if coordinates[2] < 0:
-            coordinates[2] = str(coordinates[2] + arenaX)
+            coordinates[2] = float(coordinates[2]) + arenaX
         if coordinates[2] > arenaX:
-            coordinates[2] = str(coordinates[2] - arenaX)
+            coordinates[2] = float(coordinates[2]) - arenaX
         if coordinates[3] < 0:
-            coordinates[3] = str(coordinates[3] + arenaY)
+            coordinates[3] = float(coordinates[3]) + arenaY
         if coordinates[3] > arenaY:
-            coordinates[3] = str(coordinates[3] - arenaY)
+            coordinates[3] = float(coordinates[3]) - arenaY
         return coordinates
 
     def correctArena(self, coordinates, arenaX, arenaY, arenaType):
@@ -94,13 +94,14 @@ class Preprocessor():
                 # convert the elements into strings again
                 coordinates = self.stringify(coordinates)
 
-                # fileAsList[i] = "\t".join(coordinates)+"\n"
-                out.append("\t".join(coordinates)+"\n")
+                fileAsList[i] = "\t".join(coordinates)+"\n"
+                # out.append("\t".join(coordinates)+"\n")
 
             inputFile.close()
 
         with open(filename, 'w') as outputFile:
-            outputFile.write("".join(out))
+            outputFile.write("".join(fileAsList))
+            #outputFile.write("".join(out))
             outputFile.close()
 
 
