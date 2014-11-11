@@ -134,7 +134,7 @@ class PostprocessingWorker(threading.Thread):
         """
         for todo in todos:
             id = self.getIDfromTrace(todo)
-            mates = self.db.findMates(id)
+            mates = self.db.findMates(id, self.timeTolerance, self.spaceTolerance)
             for mate in mates:
                 parent2 = {}
                 parent2["id"] = mate["mate_id"]
