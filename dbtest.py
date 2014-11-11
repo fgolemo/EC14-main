@@ -3,7 +3,7 @@ from db import DB
 db = DB("ec141:ec141@192.168.0.44/ec141", 100, 50)
 db.dropTables()
 db.createTables()
-quit()
+# quit()
 print(1)
 id1 = db.createIndividual(1,2,3)
 id2 = db.createIndividual(2,3,4)
@@ -44,5 +44,18 @@ print(parents0)
 print(parents1)
 print(parents2)
 
+mates = db.findMates(5, 1.0, 2.0)
+print(11)
+print(mates)
+
+for mate in mates:
+    parent2 = {}
+    parent2["id"] = mate["mate_id"]
+    parent2["ltime"] = mate["mate_ltime"]
+    parent2["x"] = mate["mate_x"]
+    parent2["y"] = mate["mate_y"]
+    parent2["z"] = mate["mate_z"]
+    db.makeBaby(mate, parent2, mate["ltime"])
+db.flush()
 
 print("done")

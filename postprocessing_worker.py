@@ -25,6 +25,8 @@ class PostprocessingWorker(threading.Thread):
     arena_y = 0
     arena_type = ""
     end_time = 0
+    timeTolerance = 0.0 # maximum mating time distance
+    spaceTolerance = 0.01 # maximum mating distance radius
     pp = Preprocessor()
 
     def __init__(self, dbParams, base_path, debug=False):
@@ -130,9 +132,18 @@ class PostprocessingWorker(threading.Thread):
         :param todos: list of strings with the individual IDs
         :return: None
         """
-        # TODO: implement
-
-        pass
+        for todo in todos:
+            id = self.getIDfromTrace(todo)
+            mates = self.db.findMates(id)
+            for mate in mates:
+                parent2 = {}
+                parent2["id"] = mate["mate_id"]
+                parent2["ltime"] = mate["mate_ltime"]
+                parent2["x"] = mate["mate_x"]
+                parent2["y"] = mate["mate_y"]
+                parent2["z"] = mate["mate_z"]
+                self.db.makeBaby(mate, parent2, mate["ltime"])
+        self.db.flush()
 
     def moveFiles(self, todos):
         """ once all preprocessing is done, move the files to their target destination
