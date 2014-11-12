@@ -184,6 +184,6 @@ class VoxWorker(threading.Thread):
         # run submit.sh that qsubs the stuff in the recent pool
         self.runQsub()
 
-        # TODO: mark all those individuals in the DB as submitted - do we still need this?
+        for indiv in sendList:
+            self.db.markAsVoxSubmitted(indiv)
 
-        pass

@@ -60,13 +60,18 @@ class DB():
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
 
-    def getVoxTodos(self):
+    def getVoxTodos(self, resubmit=False):
         """ retrieve individuals that need to be voxelyzed
         :return: list with strings (individual names)
         """
+        searchString = "SELECT * FROM individuals AS i " + \
+                       "WHERE i.hyperneated = 1"
+        if (resubmit):
+            searchString += " AND i.vox_submitted = 1 AND i.voxelyzed = 0"
+        else:
+            searchString += " AND i.vox_submitted = 0"
         self.flush()
-        self.cur.execute("SELECT * FROM individuals AS i " +
-                         "WHERE i.voxelyzed = 0 AND i.hyperneated = 1")
+        self.cur.execute(searchString)
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
 
@@ -94,6 +99,20 @@ class DB():
         """
         self.cur.execute("UPDATE individuals SET hyperneated = 1 WHERE id = " + str(indiv) + ";")
 
+    def markAsVoxelyzed(self, indiv):
+        """ marks the individual as been actually processed by Voxelyze
+        :param indiv: string, ID of an individual
+        :return: None
+        """
+        self.cur.execute("UPDATE individuals SET voxelyzed = 1 WHERE id = " + str(indiv) + ";")
+
+    def markAsVoxSubmitted(self, indiv):
+        """ marks the individual as been submitted to Lisa
+        :param indiv: string, ID of an individual
+        :return: None
+        """
+        self.cur.execute("UPDATE individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
+
     def dropTables(self):
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("DROP TABLE IF EXISTS individuals")
@@ -109,6 +128,7 @@ class DB():
                          "(id INT NOT NULL AUTO_INCREMENT, " +
                          "born FLOAT NOT NULL, " +
                          "hyperneated TINYINT(1) DEFAULT 0 NOT NULL, " +
+                         "vox_submitted TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "voxelyzed TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "postprocessed TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "PRIMARY KEY (id) )")
@@ -134,10 +154,11 @@ class DB():
         self.flush()
 
     def createIndividual(self, born, x, y):
-        self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0);")
+        self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0, 0);")
         individual_id = self.getLastInsertID()
-        self.cur.execute("INSERT INTO traces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
-            y) + "', 0, 1);")
+        self.cur.execute(
+            "INSERT INTO traces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
+                y) + "', 0, 1);")
         self.flush()
         print ("created individual: " + individual_id)
 
@@ -148,7 +169,7 @@ class DB():
         insertSting = "INSERT INTO traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
         print ("inserting {len} trace lines for individual {id}".format(len=len(traces), id=id))
         self.cur.executemany(insertSting, traces)
-        self.cur.execute("DELETE FROM traces WHERE id={id};".format(id = firstTrace["id"]))
+        self.cur.execute("DELETE FROM traces WHERE id={id};".format(id=firstTrace["id"]))
         self.flush()
         print ("done inserting")
 
@@ -180,72 +201,24 @@ class DB():
 
     def makeFakeBaby(self, parent1, parent2="NULL"):
         id = self.createIndividual(0, 1, 2)
-        self.cur.execute("INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
+        self.cur.execute(
+            "INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
         return id
 
     def makeBaby(self, parent1, parent2, ltime):
-        x = (parent1["x"] + parent2["x"])/2
-        y = (parent1["y"] + parent2["y"])/2
+        x = (parent1["x"] + parent2["x"]) / 2
+        y = (parent1["y"] + parent2["y"]) / 2
         id = self.createIndividual(ltime, x, y)
-        self.cur.execute("INSERT INTO offspring VALUES (NULL, " + str(parent1["id"]) + ", " + str(parent2["id"]) + ", " + str(id) + ", 0);")
+        self.cur.execute(
+            "INSERT INTO offspring VALUES (NULL, " + str(parent1["id"]) + ", " + str(parent2["id"]) + ", " + str(
+                id) + ", 0);")
         return id
 
-    def findMates(self, id, timeTolerance = 0.0, spaceTolerance = 0.01):
-        query = "SELECT t1.*, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z "+\
-                "FROM traces AS t1 INNER JOIN traces as t2 "+\
-                "WHERE t1.indiv_id='{indiv_id}' and t2.indiv_id!='{indiv_id}' "+\
-                "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} "+\
+    def findMates(self, id, timeTolerance=0.0, spaceTolerance=0.01):
+        query = "SELECT t1.*, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
+                "FROM traces AS t1 INNER JOIN traces as t2 " + \
+                "WHERE t1.indiv_id='{indiv_id}' and t2.indiv_id!='{indiv_id}' " + \
+                "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} " + \
                 "AND SQRT( POW(t1.x - t2.x,2) + POW(t1.y - t2.y,2) ) <= {spaceTol}"
-        self.cur.execute(query.format(indiv_id = id, timeTol = timeTolerance, spaceTol = spaceTolerance))
+        self.cur.execute(query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance))
         return self.cur.fetchall()
-
-    # ##################PETER FUNCTIONS
-
-
-
-    def GetNextChildrenVoxCad(self, endtime):
-        # This function returns rows of children that are ready to be simulated: RobotID, timestep, x, y, z
-        # Select all children (child = 1) that have been generated by hyperneat (HNeat = 1), but have not been simulated yet (VCad = 0)
-        self.cur.execute(
-            "SELECT CAST(RobotID AS nvarchar(9))+'.xml' AS RobotID, timestep, x, y, z FROM RobotLocationData WHERE timestep < %s AND child = 1 AND HNeat = 1 AND VCad = 0",
-            endtime)
-        childrenVoxCad = self.cur.fetchall()
-
-        return childrenVoxCad
-
-    def GetNextChildrenHyperNEAT(self, endtime):
-        # This function returns rows of children that are ready to be generated by HyperNEAT: ChildID, firstID, secondID
-
-        # Get all children from table NewChildren that have to be generated
-        self.cur.execute(
-            "SELECT CAST(ChildID AS nvarchar(9))+'.xml' As ChildID, CAST(ParentOne AS nvarchar(9))+'.xml' AS ParentOne, CAST(ParentTwo AS nvarchar(9))+'.xml' AS ParentTwo FROM NewChildren WHERE HNeat = 0 AND timestep < %s",
-            endtime)
-        children = self.cur.fetchall()
-
-        # Update the RobotLocationData table with the HyperNeat marker for the children
-        self.cur.execute(
-            "UPDATE RobotLocationData SET HNeat = 1 WHERE RobotID IN (SELECT ChildID FROM NewChildren WHERE HNeat = 0 AND timestep < %s)",
-            endtime)
-
-        # Update Hyperneat marker for all children that were returned by the last statement
-        self.cur.exectue("UPDATE NewChildData SET HNeat = 1 WHERE HNeat = 0 AND timestep < %s", endtime)
-
-        return children
-
-    def InputInitialPopulationData(self, data):
-        # This function does not return any data.
-        # Insert the initial population (robots not yet simulated) into table RobotLocationData
-
-
-        for row in data:
-            # change parts of the code to fit in the data parameter
-            IntID = row[0]
-            IntID = IntID[0:5]
-            self.cur.execute(
-                "INSERT INTO RobotLocationData (RobotID, timestep, x, y, z, child, HNeat, VCad, JobID) VALUES (%s,%s,%d,%d,%d,1,1,0,0)",
-                (IntID, row[1], row[2], row[3], row[4]))
-
-
-
-
-
