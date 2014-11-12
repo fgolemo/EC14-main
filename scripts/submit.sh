@@ -7,7 +7,7 @@ base=${HOME}/${1}
 
 pool=dead${2}.pool
 population=/${1}/population/ #have to skip home, because qsub replaces it
-traces=/${1}/traces_tmp/
+traces=/${1}/traces_
 pool_input=${base}/pool/vox.${2}.pool
 logs=${base}/logs
 

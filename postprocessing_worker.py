@@ -15,7 +15,7 @@ class PostprocessingWorker(threading.Thread):
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
     pop_path = "population/"
-    traces_path = "traces_tmp/"
+    traces_path = "traces_afterVox/"
     debug = False
     db = None
     queue = []

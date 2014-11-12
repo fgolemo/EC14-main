@@ -129,7 +129,8 @@ class EC14controller():
         os.makedirs(self.base_path + "scripts/")
         os.makedirs(self.base_path + "config/")
         os.makedirs(self.base_path + "population/")
-        os.makedirs(self.base_path + "traces_tmp/")
+        os.makedirs(self.base_path + "traces_duringVox/")
+        os.makedirs(self.base_path + "traces_afterVox/")
         os.makedirs(self.base_path + "pool/")
         os.makedirs(self.base_path + "logs/")
 
