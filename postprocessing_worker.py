@@ -54,6 +54,8 @@ class PostprocessingWorker(threading.Thread):
         print("PP: starting file observer on path:\n" + obs_path)
         self.observer.start()
 
+        self.initialDirCheck(obs_path)
+
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
             if (len(self.queue) > 0):
                 queue_partition = self.queue
@@ -95,6 +97,14 @@ class PostprocessingWorker(threading.Thread):
         path, filename = os.path.split(file_path)
         name_parts = filename.split(".")
         return name_parts[0]
+
+    def initialDirCheck(self, path):
+        """ upon start check if there are files in the target diretory, because the watcher only notices files being moved there while running
+        :return: None
+        """
+        unprocessed = [ os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path,f)) ]
+        for todo in unprocessed:
+            self.addFile(todo)
 
     def markAsVoxelyzed(self, todos):
         """ mark all the individuals as voxelyzed, i.e. as successfully processed by Voxelyze
