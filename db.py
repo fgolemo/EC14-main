@@ -113,6 +113,13 @@ class DB():
         """
         self.cur.execute("UPDATE individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
 
+    def markAsPreprocessed(self, indiv):
+        """ marks the individual as successfully mates, trace file moved and corrected
+        :param indiv: string, ID of an individual
+        :return: None
+        """
+        self.cur.execute("UPDATE individuals SET postprocessed = 1 WHERE id = " + str(indiv) + ";")
+
     def dropTables(self):
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("DROP TABLE IF EXISTS individuals")
@@ -167,11 +174,9 @@ class DB():
     def addTraces(self, id, traces):
         firstTrace = self.getFirstTrace(id)
         insertSting = "INSERT INTO traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
-        print ("inserting {len} trace lines for individual {id}".format(len=len(traces), id=id))
         self.cur.executemany(insertSting, traces)
         self.cur.execute("DELETE FROM traces WHERE id={id};".format(id=firstTrace["id"]))
         self.flush()
-        print ("done inserting")
 
     def getIndividual(self, id):
         self.flush()

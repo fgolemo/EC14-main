@@ -25,8 +25,8 @@ class PostprocessingWorker(threading.Thread):
     arena_y = 0
     arena_type = ""
     end_time = 0
-    timeTolerance = 0.0 # maximum mating time distance
-    spaceTolerance = 0.01 # maximum mating distance radius
+    timeTolerance = 0.0  # maximum mating time distance
+    spaceTolerance = 0.01  # maximum mating distance radius
     pp = Preprocessor()
 
     def __init__(self, dbParams, base_path, debug=False):
@@ -61,6 +61,7 @@ class PostprocessingWorker(threading.Thread):
                     queue_partition):]  # to make sure that in the short fraction of time no new file was added
                 if (self.debug):
                     print("PP: found " + str(len(queue_partition)) + " todos")
+                self.markAsVoxelyzed(queue_partition)
                 self.adjustTraceFile(queue_partition)
                 self.traceToDatabase(queue_partition)
                 self.calculateOffspring(queue_partition)
@@ -95,6 +96,15 @@ class PostprocessingWorker(threading.Thread):
         name_parts = filename.split(".")
         return name_parts[0]
 
+    def markAsVoxelyzed(self, todos):
+        """ mark all the individuals as voxelyzed, i.e. as successfully processed by Voxelyze
+        :param todos: list of strings with trace file paths
+        :return: None
+        """
+        for todo in todos:
+            id = self.getIDfromTrace(todo)
+            self.db.markAsVoxelyzed(id)
+
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.
         :param todos: list of strings with the individual trace filepaths
@@ -124,7 +134,8 @@ class PostprocessingWorker(threading.Thread):
                 for i in range(0, len(fileAsList)):
                     traceLine = fileAsList[i].split()
                     traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4]])
-
+            if (self.debug):
+                print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
             self.db.addTraces(id, traces)
 
     def calculateOffspring(self, todos):
@@ -134,7 +145,11 @@ class PostprocessingWorker(threading.Thread):
         """
         for todo in todos:
             id = self.getIDfromTrace(todo)
+            if (self.debug):
+                print("PP: looking for mates for individual {indiv}...".format(indiv=id))
             mates = self.db.findMates(id, self.timeTolerance, self.spaceTolerance)
+            if (self.debug):
+                print("PP: found {len} mating occurances for individual {indiv}".format(len=len(mates), indiv=id))
             for mate in mates:
                 parent2 = {}
                 parent2["id"] = mate["mate_id"]
