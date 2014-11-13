@@ -228,7 +228,7 @@ class DB():
         return id
 
     def findMates(self, id, timeTolerance=0.0, spaceTolerance=0.01):
-        query = "SELECT t1.*, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
+        query = "SELECT t1.*, t2.indiv_id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM traces AS t1 INNER JOIN traces as t2 " + \
                 "WHERE t1.indiv_id='{indiv_id}' and t2.indiv_id!='{indiv_id}' " + \
                 "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} " + \

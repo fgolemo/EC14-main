@@ -167,6 +167,9 @@ class PostprocessingWorker(threading.Thread):
                 parent2["x"] = mate["mate_x"]
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
+                # if (self.debug): #this can get too much
+                #     print("PP: adding mate:")
+                #     print(parent2)
                 self.db.makeBaby(mate, parent2, mate["ltime"])
         self.db.flush()
 
