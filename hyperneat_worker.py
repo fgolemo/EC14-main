@@ -124,6 +124,10 @@ class HNWorker(threading.Thread):
         if self.debug:
             print("HN: preprocessing")
         for indiv in todos:
+            if (not os.path.isfile(self.hn_path + str(indiv) + self.suffix_vox)):
+                print ("HH: individual " + str(indiv) + " born dead")
+                self.db.markAsDead(indiv)
+                continue
             shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
             shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
             os.remove(self.hn_path + self.hn_trash_file.format(indiv))

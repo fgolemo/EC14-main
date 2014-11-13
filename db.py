@@ -120,6 +120,14 @@ class DB():
         """
         self.cur.execute("UPDATE individuals SET postprocessed = 1 WHERE id = " + str(indiv) + ";")
 
+    def markAsDead(self, indiv):
+        """ marks the individual as unusable
+        :param indiv: string, ID of an individual
+        :return: None
+        """
+        self.cur.execute("UPDATE individuals SET postprocessed = 1, hyperneated = 1, "+\
+                         "voxelyzed = 1, vox_submitted =1 WHERE id = " + str(indiv) + ";")
+
     def dropTables(self):
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("DROP TABLE IF EXISTS individuals")
