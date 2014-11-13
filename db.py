@@ -125,7 +125,7 @@ class DB():
         :param indiv: string, ID of an individual
         :return: None
         """
-        self.cur.execute("UPDATE individuals SET postprocessed = 1, hyperneated = 1, "+\
+        self.cur.execute("UPDATE individuals SET postprocessed = 1, hyperneated = 1, " + \
                          "voxelyzed = 1, vox_submitted =1 WHERE id = " + str(indiv) + ";")
 
     def dropTables(self):
@@ -218,20 +218,30 @@ class DB():
             "INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
         return id
 
-    def makeBaby(self, parent1, parent2, ltime):
+    def makeBaby(self, parent1, parent2, ltime, infertileSpan):
         x = (parent1["x"] + parent2["x"]) / 2
         y = (parent1["y"] + parent2["y"]) / 2
         id = self.createIndividual(ltime, x, y)
+        insertString = "INSERT INTO offspring VALUES (NULL, {parent1}, {parent2}, {child}, {ltime});"
         self.cur.execute(
-            "INSERT INTO offspring VALUES (NULL, " + str(parent1["id"]) + ", " + str(parent2["id"]) + ", " + str(
-                id) + ", 0);")
+            insertString.format(parent1=parent1["indiv_id"], parent2=parent2["indiv_id"], child=id, ltime=ltime))
+        self.infertilize(parent1["indiv_id"], ltime, infertileSpan)
+        self.infertilize(parent2["indiv_id"], ltime, infertileSpan)
+        self.flush()
         return id
 
-    def findMates(self, id, timeTolerance=0.0, spaceTolerance=0.01):
-        query = "SELECT t1.*, t2.indiv_id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
+    def infertilize(self, parent, start, timespan):
+        updateString = "UPDATE traces SET fertile = 0 WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
+        self.cur.execute(updateString.format(indiv = parent, start = start, end = start + timespan))
+
+    def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0):
+        query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM traces AS t1 INNER JOIN traces as t2 " + \
                 "WHERE t1.indiv_id='{indiv_id}' and t2.indiv_id!='{indiv_id}' " + \
+                "AND t1.fertile = 1 AND t2.fertile = 1 " + \
+                "AND t1.id > {start} " + \
                 "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} " + \
-                "AND SQRT( POW(t1.x - t2.x,2) + POW(t1.y - t2.y,2) ) <= {spaceTol}"
-        self.cur.execute(query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance))
+                "AND SQRT( POW(t1.x - t2.x,2) + POW(t1.y - t2.y,2) ) <= {spaceTol} " + \
+                "LIMIT 1"
+        self.cur.execute(query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance, start=startTrace))
         return self.cur.fetchall()

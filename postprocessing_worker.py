@@ -28,6 +28,8 @@ class PostprocessingWorker(threading.Thread):
     timeTolerance = 0.0  # maximum mating time distance
     spaceTolerance = 0.01  # maximum mating distance radius
     pp = Preprocessor()
+    indiv_max_age = 0
+    indiv_infertile_span = 0.25
 
     def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
@@ -41,6 +43,7 @@ class PostprocessingWorker(threading.Thread):
         self.arena_y = self.config.getfloat('Arena', 'arena_y')
         self.arena_type = self.config.get('Arena', 'arena_type')
         self.end_time = self.config.getfloat('Experiment', 'end_time')
+        self.indiv_max_age = self.config.getfloat('Experiment', 'indiv_max_age')
 
     def run(self):
         """ main thread function
@@ -157,20 +160,26 @@ class PostprocessingWorker(threading.Thread):
             id = self.getIDfromTrace(todo)
             if (self.debug):
                 print("PP: looking for mates for individual {indiv}...".format(indiv=id))
-            mates = self.db.findMates(id, self.timeTolerance, self.spaceTolerance)
-            if (self.debug):
-                print("PP: found {len} mating occurances for individual {indiv}".format(len=len(mates), indiv=id))
-            for mate in mates:
+            mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance)
+            i = 0
+            while (len(mates) != 0):
+                i+=1
+                mate = mates[0]
                 parent2 = {}
                 parent2["id"] = mate["mate_id"]
+                parent2["indiv_id"] = mate["mate_indiv_id"]
                 parent2["ltime"] = mate["mate_ltime"]
                 parent2["x"] = mate["mate_x"]
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
-                # if (self.debug): #this can get too much
-                #     print("PP: adding mate:")
-                #     print(parent2)
-                self.db.makeBaby(mate, parent2, mate["ltime"])
+                self.db.makeBaby(mate, parent2, mate["ltime"], self.indiv_max_age*self.indiv_infertile_span)
+
+                newStart = mate["id"]
+                mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart)
+
+            if (self.debug):
+                print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
+
         self.db.flush()
 
     def moveFiles(self, todos):

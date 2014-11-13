@@ -30,7 +30,7 @@ class EC14controller():
     config = None
     path_prefix = "~/EC14-Exp-"
 
-    random_granularity = 100.0
+    random_granularity = 10000.0
 
     yes = {'yes', 'y', 'ye'}
     no = {'no', 'n', ''}

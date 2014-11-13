@@ -8,6 +8,8 @@ print(1)
 id1 = db.createIndividual(1,2,3)
 id2 = db.createIndividual(2,3,4)
 id3 = db.createIndividual(3,4,5)
+id4 = db.createIndividual(0,1,2)
+id5 = db.createIndividual(0,1,1)
 print(2)
 print("id:"+str(id1))
 indiv = db.getIndividual(id3)
@@ -44,18 +46,28 @@ print(parents0)
 print(parents1)
 print(parents2)
 
-mates = db.findMates(5, 1.0, 2.0)
-print(11)
-print(mates)
+todos = [indiv1, indiv2]
+for todo in todos:
+    id = todo
+    print("PP: looking for mates for individual {indiv}...".format(indiv=id))
+    mates = db.findMate(id, 5, 10)
+    i = 0
+    while (len(mates) != 0):
+        i+=1
+        mate = mates[0]
+        parent2 = {}
+        parent2["id"] = mate["mate_id"]
+        parent2["indiv_id"] = mate["mate_indiv_id"]
+        parent2["ltime"] = mate["mate_ltime"]
+        parent2["x"] = mate["mate_x"]
+        parent2["y"] = mate["mate_y"]
+        parent2["z"] = mate["mate_z"]
+        db.makeBaby(mate, parent2, mate["ltime"], 2)
 
-for mate in mates:
-    parent2 = {}
-    parent2["id"] = mate["mate_id"]
-    parent2["ltime"] = mate["mate_ltime"]
-    parent2["x"] = mate["mate_x"]
-    parent2["y"] = mate["mate_y"]
-    parent2["z"] = mate["mate_z"]
-    db.makeBaby(mate, parent2, mate["ltime"])
+        newStart = mate["id"]
+        mates = db.findMate(id, 5, 10, newStart)
+
+    print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
 db.flush()
 
 print("done")
