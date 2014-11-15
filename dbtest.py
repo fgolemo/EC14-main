@@ -1,6 +1,6 @@
 from db import DB
 
-db = DB("ec141:ec141@192.168.0.44/ec141", 100, 50)
+db = DB("ec141:ec141@192.168.0.44/ec141", "test", 100, 50)
 db.dropTables()
 db.createTables()
 # quit()

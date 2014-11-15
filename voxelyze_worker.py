@@ -28,7 +28,7 @@ class VoxWorker(threading.Thread):
 
     def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
-        self.db = DB(dbParams[0], dbParams[1], dbParams[2])
+        self.db = DB(dbParams[0], dbParams[1], dbParams[2], dbParams[3])
         self.base_path = base_path
         self.debug = debug
         self.poolFilePath = self.base_path + self.pool_path + self.pool_filename

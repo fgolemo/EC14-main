@@ -15,6 +15,7 @@ class EC14controller():
     db = None
     dbString = ""
     dbParams = ""
+    exp_name = ""
     hnWorker = None
     voxWorker = None
     ppWorker = None
@@ -111,14 +112,14 @@ class EC14controller():
 
         if db_given in self.yes:
             # base_path = raw_input("Path to experiment folder (e.g. ~/EC14-Exp-1):")
-            base_path = raw_input("Name of the experiment (will look for " + self.path_prefix + "[name] ):")
-            while not os.path.exists(os.path.expanduser(self.path_prefix + base_path)):
-                base_path = raw_input("I can't find that folder, please try again:")
+            self.exp_name = raw_input("Name of the experiment (will look for " + self.path_prefix + "[name] ):")
+            while not os.path.exists(os.path.expanduser(self.path_prefix + self.exp_name)):
+                self.exp_name = raw_input("I can't find that folder, please try again:")
         else:
             self.newExperiment = True
-            base_path = self.askExperimentName()
+            self.exp_name = self.askExperimentName()
 
-        self.base_path = os.path.expanduser(self.path_prefix + base_path + "/")
+        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name + "/")
         print "Working directory: " + self.base_path
 
     def installFiles(self):
@@ -222,8 +223,8 @@ class EC14controller():
         :return: None
         """
 
-        self.db = DB(self.dbString, self.end_time, self.indiv_max_age)
-        self.dbParams = (self.dbString, self.end_time, self.indiv_max_age)
+        self.db = DB(self.dbString, self.exp_name, self.end_time, self.indiv_max_age)
+        self.dbParams = (self.dbString, self.exp_name, self.end_time, self.indiv_max_age)
 
         if self.newExperiment:
             self.db.createTables()

@@ -10,10 +10,12 @@ class DB():
     keys_individuals = []
     keys_traces = []
     keys_offspring = []
+    tablePrefix = ""
 
-    def __init__(self, connectionString, maxSimTime=0, maxAge=0):
+    def __init__(self, connectionString, tablePrefix, maxSimTime=0, maxAge=0):
         self.maxSimTime = maxSimTime
         self.maxAge = maxAge
+        self.tablePrefix = tablePrefix
 
         components = connectionString.split("@")
         if len(components) != 2:
@@ -55,7 +57,7 @@ class DB():
         :return: list with strings (individual names)
         """
         self.flush()
-        self.cur.execute("SELECT * FROM individuals AS i " +
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_individuals AS i " +
                          "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
@@ -64,7 +66,7 @@ class DB():
         """ retrieve individuals that need to be voxelyzed
         :return: list with strings (individual names)
         """
-        searchString = "SELECT * FROM individuals AS i " + \
+        searchString = "SELECT * FROM "+self.tablePrefix+"_individuals AS i " + \
                        "WHERE i.hyperneated = 1"
         if (resubmit):
             searchString += " AND i.vox_submitted = 1 AND i.voxelyzed = 0"
@@ -80,7 +82,7 @@ class DB():
         :return: list of strings (parent IDs), length of this list is either 0, 1 or 2, for no parents, has been mutated from 1 parent and was created by mating,
         """
         self.flush()
-        self.cur.execute("SELECT * FROM offspring AS o " +
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_offspring AS o " +
                          "WHERE o.child_id = " + str(indiv))
         result = self.cur.fetchone()
         if result == None:
@@ -97,49 +99,49 @@ class DB():
         :param indiv: string, ID of an individual
         :return: None
         """
-        self.cur.execute("UPDATE individuals SET hyperneated = 1 WHERE id = " + str(indiv) + ";")
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET hyperneated = 1 WHERE id = " + str(indiv) + ";")
 
     def markAsVoxelyzed(self, indiv):
         """ marks the individual as been actually processed by Voxelyze
         :param indiv: string, ID of an individual
         :return: None
         """
-        self.cur.execute("UPDATE individuals SET voxelyzed = 1 WHERE id = " + str(indiv) + ";")
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET voxelyzed = 1 WHERE id = " + str(indiv) + ";")
 
     def markAsVoxSubmitted(self, indiv):
         """ marks the individual as been submitted to Lisa
         :param indiv: string, ID of an individual
         :return: None
         """
-        self.cur.execute("UPDATE individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
 
     def markAsPreprocessed(self, indiv):
         """ marks the individual as successfully mates, trace file moved and corrected
         :param indiv: string, ID of an individual
         :return: None
         """
-        self.cur.execute("UPDATE individuals SET postprocessed = 1 WHERE id = " + str(indiv) + ";")
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET postprocessed = 1 WHERE id = " + str(indiv) + ";")
 
     def markAsDead(self, indiv):
         """ marks the individual as unusable
         :param indiv: string, ID of an individual
         :return: None
         """
-        self.cur.execute("UPDATE individuals SET postprocessed = 1, hyperneated = 1, " + \
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET postprocessed = 1, hyperneated = 1, " + \
                          "voxelyzed = 1, vox_submitted =1 WHERE id = " + str(indiv) + ";")
 
     def dropTables(self):
         self.cur.execute("SET sql_notes = 0")
-        self.cur.execute("DROP TABLE IF EXISTS individuals")
-        self.cur.execute("DROP TABLE IF EXISTS traces")
-        self.cur.execute("DROP TABLE IF EXISTS offspring")
+        self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_individuals")
+        self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_traces")
+        self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_offspring")
         self.cur.execute("SET sql_notes = 1")
         self.flush()
 
     def createTables(self):
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
-                         "individuals " +
+                         self.tablePrefix+"_individuals " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
                          "born FLOAT NOT NULL, " +
                          "hyperneated TINYINT(1) DEFAULT 0 NOT NULL, " +
@@ -148,7 +150,7 @@ class DB():
                          "postprocessed TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
-                         "traces " +
+                         self.tablePrefix+"_traces " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
                          "indiv_id INT NOT NULL, " +
                          "ltime FLOAT NOT NULL, " +
@@ -158,7 +160,7 @@ class DB():
                          "fertile TINYINT(1) DEFAULT 1 NOT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
-                         "offspring " +
+                         self.tablePrefix+"_offspring " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
                          "parent1_id INT NOT NULL, " +
                          "parent2_id INT, " +
@@ -169,10 +171,10 @@ class DB():
         self.flush()
 
     def createIndividual(self, born, x, y):
-        self.cur.execute("INSERT INTO individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0, 0);")
+        self.cur.execute("INSERT INTO "+self.tablePrefix+"_individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0, 0);")
         individual_id = self.getLastInsertID()
         self.cur.execute(
-            "INSERT INTO traces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
+            "INSERT INTO "+self.tablePrefix+"_traces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
                 y) + "', 0, 1);")
         self.flush()
         print ("created individual: " + individual_id)
@@ -181,26 +183,26 @@ class DB():
 
     def addTraces(self, id, traces):
         firstTrace = self.getFirstTrace(id)
-        insertSting = "INSERT INTO traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
+        insertSting = "INSERT INTO "+self.tablePrefix+"_traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
         self.cur.executemany(insertSting, traces)
-        self.cur.execute("DELETE FROM traces WHERE id={id};".format(id=firstTrace["id"]))
+        self.cur.execute("DELETE FROM "+self.tablePrefix+"_traces WHERE id={id};".format(id=firstTrace["id"]))
         self.flush()
 
     def getIndividual(self, id):
         self.flush()
-        self.cur.execute("SELECT * FROM individuals AS i WHERE i.id = '" + str(id) + "' ")
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_individuals AS i WHERE i.id = '" + str(id) + "' ")
         # return dict(zip(self.keys_individuals, self.cur.fetchone()))
         return self.cur.fetchone()
 
     def getTraces(self, id):
         self.flush()
-        self.cur.execute("SELECT * FROM traces AS t WHERE t.indiv_id = '" + str(id) + "' ")
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_traces AS t WHERE t.indiv_id = '" + str(id) + "' ")
         return self.cur.fetchall()
 
 
     def getFirstTrace(self, id):
         self.flush()
-        self.cur.execute("SELECT * FROM traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC")
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC")
         # return dict(zip(self.keys_traces, self.cur.fetchone()))
         return self.cur.fetchone()
 
@@ -215,14 +217,14 @@ class DB():
     def makeFakeBaby(self, parent1, parent2="NULL"):
         id = self.createIndividual(0, 1, 2)
         self.cur.execute(
-            "INSERT INTO offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
+            "INSERT INTO "+self.tablePrefix+"_offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
         return id
 
     def makeBaby(self, parent1, parent2, ltime, infertileSpan):
         x = (parent1["x"] + parent2["x"]) / 2
         y = (parent1["y"] + parent2["y"]) / 2
         id = self.createIndividual(ltime, x, y)
-        insertString = "INSERT INTO offspring VALUES (NULL, {parent1}, {parent2}, {child}, {ltime});"
+        insertString = "INSERT INTO "+self.tablePrefix+"_offspring VALUES (NULL, {parent1}, {parent2}, {child}, {ltime});"
         self.cur.execute(
             insertString.format(parent1=parent1["indiv_id"], parent2=parent2["indiv_id"], child=id, ltime=ltime))
         self.infertilize(parent1["indiv_id"], ltime, infertileSpan)
@@ -231,12 +233,12 @@ class DB():
         return id
 
     def infertilize(self, parent, start, timespan):
-        updateString = "UPDATE traces SET fertile = 0 WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
+        updateString = "UPDATE "+self.tablePrefix+"_traces SET fertile = 0 WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
         self.cur.execute(updateString.format(indiv = parent, start = start, end = start + timespan))
 
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0):
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
-                "FROM traces AS t1 INNER JOIN traces as t2 " + \
+                "FROM "+self.tablePrefix+"_traces AS t1 INNER JOIN "+self.tablePrefix+"_traces as t2 " + \
                 "WHERE t1.indiv_id='{indiv_id}' and t2.indiv_id!='{indiv_id}' " + \
                 "AND t1.fertile = 1 AND t2.fertile = 1 " + \
                 "AND t1.id > {start} " + \

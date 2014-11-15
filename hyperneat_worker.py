@@ -26,7 +26,7 @@ class HNWorker(threading.Thread):
 
     def __init__(self, dbParams, base_path, debug=False):
         threading.Thread.__init__(self)
-        self.db = DB(dbParams[0], dbParams[1], dbParams[2])
+        self.db = DB(dbParams[0], dbParams[1], dbParams[2], dbParams[3])
         self.base_path = base_path
         # individuals will be found here: self.base_path + self.pop_path + str(indiv)
         self.hn_path = os.path.expanduser(self.hn_path)
