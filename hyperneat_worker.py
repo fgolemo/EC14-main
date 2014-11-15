@@ -9,6 +9,7 @@ class HNWorker(threading.Thread):
     """
 
     pause_time = 2
+    queue_len = 12
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
     pop_path = "population/"
@@ -40,16 +41,21 @@ class HNWorker(threading.Thread):
         """
         waitCounter = 0
         startTime = time.time()
+        todos = []
         while not self.stopRequest.isSet() and waitCounter < self.max_waiting_time:
-            todos = self.checkForTodos()
+            newTodos = self.checkForTodos()
+            for newTodo in newTodos:
+                if newTodo not in todos:
+                    todos.append(newTodo)
 
             if len(todos) > 0:
+                todoTmp = todos[:self.queue_len]
                 if self.debug:
-                    print("HN: found " + str(len(todos)) + " todos")
-                self.execHN(todos)
-                self.cleanupAfterHN(todos)
-                self.preprocessBeforeVox(todos)
+                    print("HN: found " + str(len(todoTmp)) + " todos")
+                self.execHN(todoTmp)
+                self.preprocessBeforeVox(todoTmp)
                 waitCounter = 0
+                todos = todos[self.queue_len:]
             else:
                 if self.debug:
                     print("HN: found no todos")
@@ -101,19 +107,6 @@ class HNWorker(threading.Thread):
             print("HN: finished creating individual: " + str(indiv))
             # TODO (later): error check the hyperneat output
 
-        pass
-
-    def cleanupAfterHN(self, todos):
-        """ clean HyperNEAT leftover files and move individuals
-        :param todos: list with strings containing the names of the individuals from the last HN run
-        :return: None
-        """
-        if self.debug:
-            print("HN: cleaning up")
-
-        # TODO: run the real hyperneat on lisa, list all the stray files that HN generates
-        # TODO: and here write a few lines to clean them up (i.e. just delete unused HN-generated files)
-        # probably the todos parameter is not necessary, but keep it for now
         pass
 
     def preprocessBeforeVox(self, todos):
