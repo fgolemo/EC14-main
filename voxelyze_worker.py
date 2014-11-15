@@ -94,7 +94,7 @@ class VoxWorker(threading.Thread):
         :param forced: boolean true in case the queue has to be flushed (queued items waiting for too long)
         :return: None
         """
-        if len(self.queue) > self.queue_length or forced:
+        if len(self.queue) >= self.queue_length or forced:
             if self.debug:
                 print ("vox: got " + str(
                     self.queue_length) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
