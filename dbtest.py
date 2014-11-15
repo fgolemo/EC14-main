@@ -69,5 +69,12 @@ for todo in todos:
 
     print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
 db.flush()
+print(11)
+
+db.addJob("123456", "qsub dqwpdjwpd -qdqwdq {} qdwqwd $! qwodjq")
+db.addJob("123457", "qsub dqoiwdj [];.,<>\'")
+openjobs = db.getJobsWaitingCount()
+print(openjobs)
+print(12)
 
 print("done")

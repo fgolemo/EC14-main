@@ -135,6 +135,7 @@ class DB():
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_individuals")
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_traces")
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_offspring")
+        self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_jobs")
         self.cur.execute("SET sql_notes = 1")
         self.flush()
 
@@ -166,6 +167,14 @@ class DB():
                          "parent2_id INT, " +
                          "child_id INT NOT NULL, " +
                          "ltime FLOAT NOT NULL, " +
+                         "PRIMARY KEY (id) )")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS " +
+                         self.tablePrefix+"_jobs " +
+                         "(id INT NOT NULL AUTO_INCREMENT, " +
+                         "jname VARCHAR(20), " +
+                         "cmd TEXT, " +
+                         "start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                         "done DATETIME DEFAULT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("SET sql_notes = 1")
         self.flush()
@@ -208,6 +217,19 @@ class DB():
 
     def flush(self):
         self.con.commit()
+
+    def addJob(self, name, cmd):
+        name = name.replace("'", "\\'")
+        cmd = cmd.replace("'", "\\'")
+        insertSting = "INSERT INTO "+self.tablePrefix+"_jobs VALUES (NULL, '{name}', '{cmd}', NOW(), NULL);"
+        self.cur.execute(insertSting.format(name = name, cmd = cmd))
+        self.flush()
+
+    def getJobsWaitingCount(self):
+        querySting = "SELECT COUNT(id) FROM "+self.tablePrefix+"_jobs WHERE done IS NULL;"
+        self.cur.execute(querySting)
+        result = self.cur.fetchall()
+        return result[0]['COUNT(id)']
 
     def getLastInsertID(self):
         self.cur.execute("SELECT LAST_INSERT_ID();")
