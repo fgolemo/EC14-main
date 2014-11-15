@@ -73,7 +73,7 @@ class EC14controller():
         working = False
         while (not working):
             try:
-                dbo = DB(db_string)  # ec141:ec141@192.168.0.44/ec141
+                dbo = DB(db_string, self.exp_name)  # ec141:ec141@192.168.0.44/ec141
                 dbo.close()
                 working = True
             except mysql.connector.Error as err:
