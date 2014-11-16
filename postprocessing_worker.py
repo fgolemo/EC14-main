@@ -78,8 +78,12 @@ class PostprocessingWorker(threading.Thread):
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
+            jobsRunning = self.db.getJobsWaitingCount()
+
             if (self.debug):
+                print("PP: {n} jobs currently waiting in LISA queue...".format(n=jobsRunning))
                 print("PP: sleeping now for " + str(self.pause_time) + "s")
+
             self.stopRequest.wait(self.pause_time)
 
         print ("PP: got exit signal... cleaning up")
@@ -117,6 +121,7 @@ class PostprocessingWorker(threading.Thread):
         for todo in todos:
             id = self.getIDfromTrace(todo)
             self.db.markAsVoxelyzed(id)
+            self.db.setJobDone(id)
 
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.

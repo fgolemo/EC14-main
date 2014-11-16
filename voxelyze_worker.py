@@ -149,26 +149,36 @@ class VoxWorker(threading.Thread):
     def getExperimentName(self):
         return os.path.basename(self.base_path[:-1])
 
-    def runQsub(self):
+    def runQsub(self, sendList):
         vox_string = self.getExperimentName() + " " + str(self.lastPoolFile)
         if self.debug:
             print("VOX: calling submit script like this:\n" + self.submit_script + " " + vox_string)
         try:
-            subprocess.check_call(self.submit_script + " " + vox_string,
-                                  stdout=open(
-                                      self.base_path + "logs/" + "submit." + str(self.lastPoolFile) + ".stdout.log",
-                                      "w"),
+            cmd = self.submit_script + " " + vox_string
+            output = subprocess.check_output(cmd,
                                   stderr=open(
                                       self.base_path + "logs/" + "submit." + str(self.lastPoolFile) + ".stderr.log",
                                       "w"),
                                   stdin=open(os.devnull),
                                   shell=True)
+            jobname = self.splitOutputIntoJobname(output)
+            self.db.addJob(jobname, cmd, sendList)
         except subprocess.CalledProcessError as e:
             print ("Vox: during submit.sh execution there was an error:")
             print (str(e.returncode))
             quit()
             # TODO: better error handling, but so far, we dont allow submit.sh to fail -
             # TODO: and if it fails, we can check the logs immediately
+
+    def splitOutputIntoJobname(self, output):
+        out = output.split(".")
+        if (len(out) == 5):
+            return out[0]
+        else:
+            print("VOX: probably serious error... submitting the job to the lisa queue didn't return an expected format: ")
+            print(output)
+            print("...while we expected something like 1234.batch1.lisa.surfsara.nl")
+            return "0"
 
     def sendQueue(self, sendList):
         """ submits the queue (or part of it) to the Lisa job queue
@@ -182,7 +192,7 @@ class VoxWorker(threading.Thread):
         self.createPoolFile(sendList)
 
         # run submit.sh that qsubs the stuff in the recent pool
-        self.runQsub()
+        self.runQsub(sendList)
 
         for indiv in sendList:
             self.db.markAsVoxSubmitted(indiv)

@@ -73,8 +73,15 @@ print(11)
 
 db.addJob("123456", "qsub dqwpdjwpd -qdqwdq {} qdwqwd $! qwodjq")
 db.addJob("123457", "qsub dqoiwdj [];.,<>\'")
+db.addJob("123457", "qsub job3 blabli", ["20","21","22"])
 openjobs = db.getJobsWaitingCount()
 print(openjobs)
 print(12)
+
+db.setJobDone("22")
+openjobs = db.getJobsWaitingCount()
+print(openjobs)
+print(12)
+
 
 print("done")

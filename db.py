@@ -175,6 +175,7 @@ class DB():
                          "cmd TEXT, " +
                          "start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
                          "done DATETIME DEFAULT NULL, " +
+                         "individuals TEXT DEFAULT NULL, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("SET sql_notes = 1")
         self.flush()
@@ -218,11 +219,14 @@ class DB():
     def flush(self):
         self.con.commit()
 
-    def addJob(self, name, cmd):
+    def addJob(self, name, cmd, individuals=[]):
         name = name.replace("'", "\\'")
         cmd = cmd.replace("'", "\\'")
-        insertSting = "INSERT INTO "+self.tablePrefix+"_jobs VALUES (NULL, '{name}', '{cmd}', NOW(), NULL);"
-        self.cur.execute(insertSting.format(name = name, cmd = cmd))
+        indivs = ""
+        if (len(individuals) > 0):
+            indivs = ",".join(individuals)
+        insertSting = "INSERT INTO "+self.tablePrefix+"_jobs VALUES (NULL, '{name}', '{cmd}', NOW(), NULL, '{indivs}');"
+        self.cur.execute(insertSting.format(name = name, cmd = cmd, indivs = indivs))
         self.flush()
 
     def getJobsWaitingCount(self):
@@ -230,6 +234,10 @@ class DB():
         self.cur.execute(querySting)
         result = self.cur.fetchall()
         return result[0]['COUNT(id)']
+
+    def setJobDone(self, indiv):
+        querySting = "UPDATE "+self.tablePrefix+"_jobs SET done=NOW() WHERE individuals LIKE '%{indiv}%';"
+        self.cur.execute(querySting.format(indiv = indiv))
 
     def getLastInsertID(self):
         self.cur.execute("SELECT LAST_INSERT_ID();")
