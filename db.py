@@ -253,7 +253,6 @@ class DB():
     def setJobDone(self, indiv):
         querySting = "UPDATE "+self.tablePrefix+"_jobs SET done=NOW() WHERE individuals LIKE '%,{indiv},%';"
         self.cur.execute(querySting.format(indiv = indiv))
-        print(result)
 
     def getLastInsertID(self):
         self.cur.execute("SELECT LAST_INSERT_ID();")
