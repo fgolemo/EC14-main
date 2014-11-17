@@ -65,13 +65,10 @@ class PostprocessingWorker(threading.Thread):
         startTime = time.time()
 
         obs_path = os.path.normpath(self.base_path + self.traces_path)
-        self.observer.schedule(ChangeHandler(self), path=obs_path)
-        print("PP: starting file observer on path:\n" + obs_path)
-        self.observer.start()
-
-        self.initialDirCheck(obs_path)
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
+            self.dirCheck(obs_path)
+            
             if (len(self.queue) > 0):
                 queue_partition = self.queue
                 self.queue = self.queue[len(
@@ -117,13 +114,14 @@ class PostprocessingWorker(threading.Thread):
         name_parts = filename.split(".")
         return name_parts[0]
 
-    def initialDirCheck(self, path):
+    def dirCheck(self, path):
         """ upon start check if there are files in the target diretory, because the watcher only notices files being moved there while running
         :return: None
         """
         unprocessed = [ os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path,f)) ]
         for todo in unprocessed:
-            self.addFile(todo)
+            if todo not in self.queue:
+                self.addFile(todo)
 
     def markAsVoxelyzed(self, todos):
         """ mark all the individuals as voxelyzed, i.e. as successfully processed by Voxelyze
@@ -210,36 +208,3 @@ class PostprocessingWorker(threading.Thread):
 
     def addFile(self, path):
         self.queue.append(path)
-
-
-class ChangeHandler(PatternMatchingEventHandler):
-    patterns = ["*.trace"]
-    pp_worker = None
-
-    def __init__(self, pp_worker, patterns=None, ignore_patterns=None, ignore_directories=False, case_sensitive=False):
-        self.pp_worker = pp_worker
-        super(ChangeHandler, self).__init__(patterns, ignore_patterns, ignore_directories, case_sensitive)
-
-    def process(self, event):
-        """
-        event.event_type
-            'modified' | 'created' | 'moved' | 'deleted'
-        event.is_directory
-            True | False
-        event.src_path
-            path/to/observed/file
-        """
-        if (event.event_type == "moved"):
-            path = event.dest_path
-        else:
-            path = event.src_path
-
-        print ("PP: found new trace file:" + path)
-        self.pp_worker.addFile(path)
-
-    def on_created(self, event):
-        self.process(event)
-    def on_modified(self, event):
-        self.process(event)
-    def on_moved(self, event):
-        self.process(event)
