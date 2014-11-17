@@ -218,7 +218,7 @@ class DB():
 
     def getFirstTrace(self, id):
         self.flush()
-        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC")
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC LIMIT 1")
         # return dict(zip(self.keys_traces, self.cur.fetchone()))
         return self.cur.fetchone()
 
