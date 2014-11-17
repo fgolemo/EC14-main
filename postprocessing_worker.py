@@ -2,8 +2,6 @@ import ConfigParser
 import shutil
 import threading, time, os
 from db import DB
-from watchdog.observers import Observer
-from watchdog.events import PatternMatchingEventHandler
 from preprocessing import Preprocessor
 
 
@@ -55,7 +53,6 @@ class PostprocessingWorker(threading.Thread):
         self.readConfig(config_path)
 
         self.stopRequest = threading.Event()
-        self.observer = Observer()
 
     def run(self):
         """ main thread function
@@ -96,7 +93,6 @@ class PostprocessingWorker(threading.Thread):
             self.stopRequest.wait(self.pause_time)
 
         print ("PP: got exit signal... cleaning up")
-        self.observer.join()
 
     def join(self, timeout=None):
         """ function to terminate the thread (softly)
@@ -106,7 +102,6 @@ class PostprocessingWorker(threading.Thread):
         if (self.debug):
             print("PP: got kill request for thread")
         self.stopRequest.set()
-        self.observer.stop()
         super(PostprocessingWorker, self).join(timeout)
 
     def getIDfromTrace(self, file_path):
