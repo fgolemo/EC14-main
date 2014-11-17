@@ -107,7 +107,6 @@ class DB():
         :return: None
         """
         self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET voxelyzed = 1 WHERE id = " + str(indiv) + ";")
-        print(result)
 
     def markAsVoxSubmitted(self, indiv):
         """ marks the individual as been submitted to Lisa
