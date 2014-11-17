@@ -169,8 +169,8 @@ class VoxWorker(threading.Thread):
         f.close()
 
     def runQsub(self, sendList):
-        vox_string = "{exp_name} {pool_file} {walltime}"
-        vox_string = vox_string.format(exp_name = self.exp_name, pool_file = str(self.lastPoolFile), walltime = self.voxelyze_walltime)
+        vox_string = "{base_path} {pool_file} {walltime}"
+        vox_string = vox_string.format(base_path = self.base_path, exp_name = self.exp_name, pool_file = str(self.lastPoolFile), walltime = self.voxelyze_walltime)
         if self.debug:
             print("VOX: calling submit script like this:\n" + self.submit_script + " " + vox_string)
         try:
