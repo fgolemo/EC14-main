@@ -68,7 +68,7 @@ class PostprocessingWorker(threading.Thread):
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
             self.dirCheck(obs_path)
-            
+
             if (len(self.queue) > 0):
                 queue_partition = self.queue
                 self.queue = self.queue[len(

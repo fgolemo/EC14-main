@@ -227,7 +227,7 @@ class DB():
         for indiv in individuals:
             indivsAsString.append(str(indiv))
         if (len(indivsAsString) > 0):
-            indivs = ",".join(indivsAsString)
+            indivs = "," + ",".join(indivsAsString) + "," # the comma at beginning and end are important, see self.setJobDone
         insertSting = "INSERT INTO "+self.tablePrefix+"_jobs VALUES (NULL, '{name}', '{cmd}', NOW(), NULL, '{indivs}');"
         self.cur.execute(insertSting.format(name = name, cmd = cmd, indivs = indivs))
         self.flush()
@@ -239,7 +239,7 @@ class DB():
         return result[0]['COUNT(id)']
 
     def setJobDone(self, indiv):
-        querySting = "UPDATE "+self.tablePrefix+"_jobs SET done=NOW() WHERE individuals LIKE '%{indiv}%';"
+        querySting = "UPDATE "+self.tablePrefix+"_jobs SET done=NOW() WHERE individuals LIKE '%,{indiv},%';"
         self.cur.execute(querySting.format(indiv = indiv))
 
     def getLastInsertID(self):
