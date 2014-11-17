@@ -229,8 +229,17 @@ class ChangeHandler(PatternMatchingEventHandler):
         event.src_path
             path/to/observed/file
         """
-        print ("PP: found new trace file:" + event.src_path)
-        self.pp_worker.addFile(event.src_path)
+        if (event.event_type == "moved"):
+            path = event.dest_path
+        else:
+            path = event.src_path
+
+        print ("PP: found new trace file:" + path)
+        self.pp_worker.addFile(path)
 
     def on_created(self, event):
+        self.process(event)
+    def on_modified(self, event):
+        self.process(event)
+    def on_moved(self, event):
         self.process(event)
