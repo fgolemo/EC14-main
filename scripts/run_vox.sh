@@ -19,4 +19,4 @@ done
 
 wait
 
-mv ${PBS_O_HOME}${traces}duringVox/* ${PBS_O_HOME}${traces}afterVox/
+mv ${traces}duringVox/* ${traces}afterVox/
