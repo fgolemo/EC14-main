@@ -107,6 +107,9 @@ class DB():
         :return: None
         """
         self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET voxelyzed = 1 WHERE id = " + str(indiv) + ";")
+        print("\nMARK AS VOXELYZED\n")
+        result = self.cur.fetchall()
+        print(result)
 
     def markAsVoxSubmitted(self, indiv):
         """ marks the individual as been submitted to Lisa
@@ -253,6 +256,9 @@ class DB():
     def setJobDone(self, indiv):
         querySting = "UPDATE "+self.tablePrefix+"_jobs SET done=NOW() WHERE individuals LIKE '%,{indiv},%';"
         self.cur.execute(querySting.format(indiv = indiv))
+        print("\nSETJOBDONE\n")
+        result = self.cur.fetchall()
+        print(result)
 
     def getLastInsertID(self):
         self.cur.execute("SELECT LAST_INSERT_ID();")
