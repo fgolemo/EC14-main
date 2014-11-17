@@ -37,6 +37,9 @@ class EC14controller():
     arena_type = ""
     config = None
     path_prefix = "~/EC14-Exp-"
+    mailer = False
+    mailer_subject = "Experiment {exp_name} done"
+    mailer_content = "Experiment {exp_name} successfully completed. Total population: {pop_total}"
 
     random_granularity = 10000.0
 
@@ -112,6 +115,10 @@ class EC14controller():
 
         self.pause_time = self.config.getint('Workers', 'pause_time')
 
+        self.mailer = self.config.getboolean('Mailer', 'mailer')
+        self.mailer_content = self.config.get('Mailer', 'content')
+        self.mailer_subject = self.config.get('Mailer', 'subject')
+
     def isNewExperiment(self):
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
         print(self.base_path)
@@ -165,6 +172,8 @@ class EC14controller():
             unfinished = self.db.getUnfinishedIndividuals()
             if unfinished == 0:
                 print("nothing left to do, quiting")
+                if (self.mailer):
+                    self.sendFinishedMail()
                 self.clean_exit()
             time.sleep(self.pause_time)
 
@@ -195,6 +204,13 @@ class EC14controller():
         self.voxWorker.join()
         self.ppWorker.join()
         sys.exit(0)
+
+    def sendFinishedMail(self):
+        pop_total = self.db.getPopulationTotal()
+        subject = self.mailer_subject.format(exp_name = self.exp_name, pop_total = pop_total)
+        content = self.mailer_subject.format(exp_name = self.exp_name, pop_total = pop_total)
+        mailer_cmd = "echo '{content}' | mail $USER -s '{subject}'".format(content = content, subject = subject)
+        subprocess.Popen(mailer_cmd, shell=True)
 
 
 ctrl = EC14controller()

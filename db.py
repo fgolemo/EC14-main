@@ -198,6 +198,12 @@ class DB():
         self.cur.execute("DELETE FROM "+self.tablePrefix+"_traces WHERE id={id};".format(id=firstTrace["id"]))
         self.flush()
 
+    def getPopulationTotal(self):
+        self.flush()
+        self.cur.execute("SELECT COUNT(id) FROM "+self.tablePrefix+"_individuals")
+        result = self.cur.fetchall()
+        return result[0]['COUNT(id)']
+
     def getIndividual(self, id):
         self.flush()
         self.cur.execute("SELECT * FROM "+self.tablePrefix+"_individuals AS i WHERE i.id = '" + str(id) + "' ")
