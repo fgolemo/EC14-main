@@ -208,7 +208,7 @@ class EC14controller():
     def sendFinishedMail(self):
         pop_total = self.db.getPopulationTotal()
         subject = self.mailer_subject.format(exp_name = self.exp_name, pop_total = pop_total)
-        content = self.mailer_subject.format(exp_name = self.exp_name, pop_total = pop_total)
+        content = self.mailer_content.format(exp_name = self.exp_name, pop_total = pop_total)
         mailer_cmd = "echo '{content}' | mail $USER -s '{subject}'".format(content = content, subject = subject)
         subprocess.Popen(mailer_cmd, shell=True)
 
