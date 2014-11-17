@@ -76,8 +76,6 @@ class EC14controller():
         """
 
         self.db = DB(self.dbString, self.exp_name, self.end_time, self.indiv_max_age)
-        self.db.cur.fetchall() # in case something was left from a previous run
-        self.db.flush()
         self.dbParams = (self.dbString, self.exp_name, self.end_time, self.indiv_max_age)
 
     def createPopulaton(self):
