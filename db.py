@@ -115,7 +115,7 @@ class DB():
         """
         self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
 
-    def markAsPreprocessed(self, indiv):
+    def markAsPostprocessed(self, indiv):
         """ marks the individual as successfully mates, trace file moved and corrected
         :param indiv: string, ID of an individual
         :return: None

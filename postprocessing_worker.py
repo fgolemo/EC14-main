@@ -77,6 +77,7 @@ class PostprocessingWorker(threading.Thread):
                 self.traceToDatabase(queue_partition)
                 self.calculateOffspring(queue_partition)
                 self.moveFiles(queue_partition)
+                self.markAsPostprocessed(queue_partition)
                 waitCounter = 0
             else:
                 if (self.debug):
@@ -127,6 +128,15 @@ class PostprocessingWorker(threading.Thread):
             id = self.getIDfromTrace(todo)
             self.db.markAsVoxelyzed(id)
             self.db.setJobDone(id)
+
+    def markAsPostprocessed(self, todos):
+        """ mark all the individuals as postprocessed, i.e. all offspring has been calculated, files have been moved and the individuals are basically done
+        :param todos: list of strings with trace file paths
+        :return: None
+        """
+        for todo in todos:
+            id = self.getIDfromTrace(todo)
+            self.db.markAsPostprocessed(id)
 
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.
