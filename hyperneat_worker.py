@@ -1,3 +1,4 @@
+import ConfigParser
 import shutil
 from subprocess import CalledProcessError
 import threading, time, subprocess, os
@@ -8,6 +9,7 @@ class HNWorker(threading.Thread):
     """ Thread for HyperNEAT worker... runs until cancelled or till max waiting time
     """
 
+    config = ConfigParser.RawConfigParser()
     pause_time = 2
     queue_len = 12
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
@@ -24,15 +26,30 @@ class HNWorker(threading.Thread):
     debug = False
     db = None
 
-    def __init__(self, dbParams, base_path, debug=False):
+    def readConfig(self, config_path):
+        self.config.read(config_path)
+        self.exp_name = self.config.get('Experiment', 'name')
+        self.path_prefix = self.config.get('Experiment', 'path_prefix')
+        self.debug = self.config.get('Experiment', 'debug')
+        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        self.hn_path = self.config.get('Hyperneat', 'hn_path')
+        self.hn_binary = self.config.get('Hyperneat', 'hn_binary')
+        self.hn_params_file = self.config.get('Hyperneat', 'hn_params_file')
+        self.suffix_genome = self.config.get('Hyperneat', 'suffix_genome')
+        self.suffix_vox = self.config.get('Hyperneat', 'suffix_vox')
+        self.pause_time = self.config.getint('Workers', 'pause_time')
+        self.queue_length = self.config.getint('Workers', 'queue_len')
+        self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
+
+    def __init__(self, dbParams, config_path):
         threading.Thread.__init__(self)
         self.db = DB(dbParams[0], dbParams[1], dbParams[2], dbParams[3])
-        self.base_path = base_path
+        self.readConfig(config_path)
+
         # individuals will be found here: self.base_path + self.pop_path + str(indiv)
         self.hn_path = os.path.expanduser(self.hn_path)
         self.pop_path = os.path.expanduser(self.base_path + self.pop_path)
 
-        self.debug = debug
         self.stopRequest = threading.Event()
 
     def run(self):
@@ -66,8 +83,6 @@ class HNWorker(threading.Thread):
                 print("HN: sleeping now for " + str(self.pause_time) + "s")
             self.stopRequest.wait(self.pause_time)
 
-        # TODO: clean the HyperNEAT output folder, leave only the binary and the parameter file
-        # TODO: i.e. tar+gzip them or copy them to archive folder in experiment
         print ("Thread: got exist signal... here I can do some last cleanup stuff before quitting")
 
     def join(self, timeout=None):

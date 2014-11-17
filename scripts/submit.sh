@@ -18,7 +18,7 @@ stopos add -p ${pool} ${pool_input}
 scriptdir=${HOME}/EC14-main/scripts
 
 # 1 hour max runtime... should suffice for a max individual lifetime of approx. 25-30s
-JOB_ID=`qsub -o ${logs}/${2}.output.log -e ${logs}/${2}.error.log -l nodes=1,walltime=3600 -v pool=${pool},population=${population},traces=${traces} ${scriptdir}/run_vox.sh`
+JOB_ID=`qsub -o ${logs}/${2}.output.log -e ${logs}/${2}.error.log -l nodes=1,walltime=${3} -v pool=${pool},population=${population},traces=${traces} ${scriptdir}/run_vox.sh`
 
 # display job queue
 #showq -u $USER

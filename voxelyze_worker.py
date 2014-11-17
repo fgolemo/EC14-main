@@ -1,3 +1,4 @@
+import ConfigParser
 import os
 import subprocess
 import threading, time
@@ -8,6 +9,7 @@ class VoxWorker(threading.Thread):
     """ Python script for Voxelize worker... runs until cancelled or till max waiting time
     """
 
+    config = ConfigParser.RawConfigParser()
     pause_time = 2
     queue_length = 12
     queue = []
@@ -22,15 +24,35 @@ class VoxWorker(threading.Thread):
     voxelyze_path = "~/EC14-voxelyze/voxelyzeMain"
     voxelyze_stepping = 100
     voxelyze_cmd = "{id}"
+    voxelyze_walltime = 299
     debug = False
     db = None
     lastPoolFile = 0
 
-    def __init__(self, dbParams, base_path, debug=False):
+    def readConfig(self, config_path):
+        self.config.read(config_path)
+        self.exp_name = self.config.get('Experiment', 'name')
+        self.path_prefix = self.config.get('Experiment', 'path_prefix')
+        self.debug = self.config.get('Experiment', 'debug')
+        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        self.queue_force_submit_time = self.config.getint('Voxelyze', 'queue_force_submit_time')
+        self.voxelyze_cmd = self.config.get('Voxelyze', 'voxelyze_cmd')
+        self.voxelyze_stepping = self.config.getint('Voxelyze', 'voxelyze_stepping')
+        self.voxelyze_path = self.config.get('Voxelyze', 'voxelyze_path')
+        self.voxelyze_walltime = self.config.getint('Voxelyze', 'voxelyze_walltime')
+        self.submit_script = self.config.get('Voxelyze', 'submit_script')
+        self.pop_path = self.config.get('Voxelyze', 'pop_path')
+        self.pool_filename = self.config.get('Voxelyze', 'pool_filename')
+        self.pool_path = self.config.get('Voxelyze', 'pool_path')
+        self.pause_time = self.config.getint('Workers', 'pause_time')
+        self.queue_length = self.config.getint('Workers', 'queue_len')
+        self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
+
+    def __init__(self, dbParams, config_path):
         threading.Thread.__init__(self)
         self.db = DB(dbParams[0], dbParams[1], dbParams[2], dbParams[3])
-        self.base_path = base_path
-        self.debug = debug
+        self.readConfig(config_path)
+        
         self.poolFilePath = self.base_path + self.pool_path + self.pool_filename
         self.stopRequest = threading.Event()
         self.submit_script = os.path.dirname(os.path.realpath(__file__)) + "/" + self.submit_script
@@ -146,11 +168,9 @@ class VoxWorker(threading.Thread):
             f.write(self.voxelyze_cmd.format(id=indiv) + "\n")
         f.close()
 
-    def getExperimentName(self):
-        return os.path.basename(self.base_path[:-1])
-
     def runQsub(self, sendList):
-        vox_string = self.getExperimentName() + " " + str(self.lastPoolFile)
+        vox_string = "{exp_name} {pool_file} {walltime}"
+        vox_string = vox_string.format(exp_name = self.exp_name, pool_file = str(self.lastPoolFile), walltime = self.voxelyze_walltime)
         if self.debug:
             print("VOX: calling submit script like this:\n" + self.submit_script + " " + vox_string)
         try:

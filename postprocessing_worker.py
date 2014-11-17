@@ -31,19 +31,31 @@ class PostprocessingWorker(threading.Thread):
     indiv_max_age = 0
     indiv_infertile_span = 0.25
 
-    def __init__(self, dbParams, base_path, debug=False):
+    def readConfig(self, config_path):
+        self.config.read(config_path)
+        self.exp_name = self.config.get('Experiment', 'name')
+        self.path_prefix = self.config.get('Experiment', 'path_prefix')
+        self.debug = self.config.get('Experiment', 'debug')
+        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        self.pop_path = self.config.get('Postprocessing', 'pop_path')
+        self.traces_path = self.config.get('Postprocessing', 'traces_path')
+        self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
+        self.pause_time = self.config.getint('Workers', 'pause_time')
+        self.queue_length = self.config.getint('Workers', 'queue_len')
+        self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
+        self.arena_x = self.config.getfloat('Arena', 'x')
+        self.arena_y = self.config.getfloat('Arena', 'y')
+        self.arena_type = self.config.get('Arena', 'type')
+        self.end_time = self.config.getfloat('Experiment', 'end_time')
+        self.indiv_max_age = self.config.getfloat('Population', 'indiv_max_age')
+
+    def __init__(self, dbParams, config_path):
         threading.Thread.__init__(self)
         self.db = DB(dbParams[0], dbParams[1], dbParams[2], dbParams[3])
-        self.base_path = base_path
-        self.debug = debug
+        self.readConfig(config_path)
+
         self.stopRequest = threading.Event()
         self.observer = Observer()
-        self.config.read(self.base_path + 'config/config.ini')
-        self.arena_x = self.config.getfloat('Arena', 'arena_x')
-        self.arena_y = self.config.getfloat('Arena', 'arena_y')
-        self.arena_type = self.config.get('Arena', 'arena_type')
-        self.end_time = self.config.getfloat('Experiment', 'end_time')
-        self.indiv_max_age = self.config.getfloat('Experiment', 'indiv_max_age')
 
     def run(self):
         """ main thread function

@@ -127,12 +127,12 @@ class EC14controller():
             self.createPopulaton()
 
         # launch workers
-        # self.hnWorker = hn.HNWorker(self.dbParams, self.base_path, True)
-        # self.hnWorker.start()
-        # self.voxWorker = vox.VoxWorker(self.dbParams, self.base_path, True)
-        # self.voxWorker.start()
-        # self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.base_path, True)
-        # self.ppWorker.start()
+        self.hnWorker = hn.HNWorker(self.dbParams, self.configPath)
+        self.hnWorker.start()
+        self.voxWorker = vox.VoxWorker(self.dbParams, self.configPath)
+        self.voxWorker.start()
+        self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.configPath)
+        self.ppWorker.start()
 
 
 ctrl = EC14controller()
