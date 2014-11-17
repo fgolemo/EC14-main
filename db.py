@@ -223,8 +223,11 @@ class DB():
         name = name.replace("'", "\\'")
         cmd = cmd.replace("'", "\\'")
         indivs = ""
-        if (len(individuals) > 0):
-            indivs = ",".join(individuals)
+        indivsAsString = []
+        for indiv in individuals:
+            indivsAsString.append(str(indiv))
+        if (len(indivsAsString) > 0):
+            indivs = ",".join(indivsAsString)
         insertSting = "INSERT INTO "+self.tablePrefix+"_jobs VALUES (NULL, '{name}', '{cmd}', NOW(), NULL, '{indivs}');"
         self.cur.execute(insertSting.format(name = name, cmd = cmd, indivs = indivs))
         self.flush()

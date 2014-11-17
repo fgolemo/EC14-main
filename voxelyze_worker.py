@@ -52,7 +52,7 @@ class VoxWorker(threading.Thread):
         threading.Thread.__init__(self)
         self.db = DB(dbParams[0], dbParams[1], dbParams[2], dbParams[3])
         self.readConfig(config_path)
-        
+
         self.poolFilePath = self.base_path + self.pool_path + self.pool_filename
         self.stopRequest = threading.Event()
         self.submit_script = os.path.dirname(os.path.realpath(__file__)) + "/" + self.submit_script
