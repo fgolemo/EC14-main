@@ -149,11 +149,8 @@ class PostprocessingWorker(threading.Thread):
             # get initial coordinates from DB
             indiv = self.db.getIndividual(id)
             first_trace = self.db.getFirstTrace(id)
-            print ("id:"+str(id))
-            print ("indiv:")
-            print(indiv)
-            print ("first_trace:")
-            print(first_trace)
+            if (first_trace == None):
+                print("\nI HAVE NO IDEA WHY, BUT THERE IS AN INITIAL TRACE MISSING HERE, FOR INDIVIDUAL: {indiv}\n".format(indiv = id))
             self.pp.addStartingPointArenaAndTime(todo, self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
                                                  first_trace["x"], first_trace["y"], indiv["born"], self.end_time)
 
