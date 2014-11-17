@@ -2,9 +2,10 @@
 import random
 from subprocess import Popen
 import os.path, time, glob, shutil, mysql.connector, ConfigParser
+import sys
+import signal
 
 # import workers
-import sys
 from db import DB
 import hyperneat_worker as hn
 import voxelyze_worker as vox
@@ -134,16 +135,25 @@ class EC14controller():
         self.ppWorker = pp.PostprocessingWorker(self.dbParams, self.configPath)
         self.ppWorker.start()
 
+        signal.signal(signal.SIGINT, self.keyboard_exit)
+
+        while (True):
+            unfinished = self.db.getUnfinishedIndividuals()
+            if unfinished == 0:
+                print("nothing left to do, quiting")
+                break
+        self.clean_exit()
+
+    def keyboard_exit(self, signal, frame):
+        print("\n-------------\nreceived CTRL+C... exiting gracefully.\n-------------\n")
+        self.clean_exit()
+
+    def clean_exit(self):
+        self.hnWorker.join()
+        self.voxWorker.join()
+        self.ppWorker.join()
+        sys.exit(0)
+
 
 ctrl = EC14controller()
 ctrl.start()
-
-time.sleep(2)
-print ("main script doing something in the background")
-stop = raw_input("want to stop? just press enter: ")
-print("user stopped")
-ctrl.hnWorker.join()
-ctrl.voxWorker.join()
-ctrl.ppWorker.join()
-print("end of script")
-

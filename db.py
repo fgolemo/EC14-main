@@ -216,6 +216,12 @@ class DB():
         # return dict(zip(self.keys_traces, self.cur.fetchone()))
         return self.cur.fetchone()
 
+    def getUnfinishedIndividuals(self):
+        self.flush()
+        self.cur.execute("SELECT count(id) FROM "+self.tablePrefix+"_individuals WHERE postprocessed = 0")
+        result = self.cur.fetchall()
+        return result[0]['COUNT(id)']
+
     def flush(self):
         self.con.commit()
 
