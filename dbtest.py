@@ -81,7 +81,11 @@ print(12)
 db.setJobDone("22")
 openjobs = db.getJobsWaitingCount()
 print(openjobs)
-print(12)
+print(13)
+
+unfinished = db.getUnfinishedIndividuals()
+print(unfinished)
+print(14)
 
 
 print("done")

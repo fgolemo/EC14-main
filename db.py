@@ -218,7 +218,7 @@ class DB():
 
     def getUnfinishedIndividuals(self):
         self.flush()
-        self.cur.execute("SELECT count(id) FROM "+self.tablePrefix+"_individuals WHERE postprocessed = 0")
+        self.cur.execute("SELECT COUNT(id) FROM "+self.tablePrefix+"_individuals WHERE postprocessed = 0")
         result = self.cur.fetchall()
         return result[0]['COUNT(id)']
 
