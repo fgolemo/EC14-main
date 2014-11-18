@@ -35,11 +35,11 @@ class PostprocessingWorker(threading.Thread):
         self.path_prefix = self.config.get('Experiment', 'path_prefix')
         self.debug = self.config.get('Experiment', 'debug')
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        self.queue_length = self.config.get('Postprocessing', 'queue_length')
         self.pop_path = self.config.get('Postprocessing', 'pop_path')
         self.traces_path = self.config.get('Postprocessing', 'traces_path')
         self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
         self.pause_time = self.config.getint('Workers', 'pause_time')
-        self.queue_length = self.config.getint('Workers', 'queue_len')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
         self.arena_x = self.config.getfloat('Arena', 'x')
         self.arena_y = self.config.getfloat('Arena', 'y')
@@ -67,11 +67,10 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
-                queue_partition = self.queue
-                self.queue = self.queue[len(
-                    queue_partition):]  # to make sure that in the short fraction of time no new file was added
+                queue_partition = self.queue[:self.queue_length]
+                self.queue = self.queue[self.queue_length:]
                 if (self.debug):
-                    print("PP: found " + str(len(queue_partition)) + " todos")
+                    print("PP: found " + str(len(queue_partition)) + " todo(s)")
                 self.markAsVoxelyzed(queue_partition)
                 self.adjustTraceFile(queue_partition)
                 self.traceToDatabase(queue_partition)

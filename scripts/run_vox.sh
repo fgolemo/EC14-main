@@ -23,3 +23,4 @@ done
 wait
 
 mv "$TMPDIR"/vox/* ${traces}afterVox/
+echo "done"
