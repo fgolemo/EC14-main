@@ -15,12 +15,11 @@ for ((i=1; i<=ncores; i++)) ; do
         break
     fi
     ./voxelyze -f ${population}${STOPOS_VALUE}_vox.vxa -p 100 > "$TMPDIR"/vox/${STOPOS_VALUE}.trace
+    mv "$TMPDIR"/vox/${STOPOS_VALUE}.trace ${traces}afterVox/${STOPOS_VALUE}.trace
     echo "trace ${STOPOS_VALUE} done"
     stopos remove -p ${pool}
 ) &
 done
 
 wait
-
-mv "$TMPDIR"/vox/* ${traces}afterVox/
 echo "done"
