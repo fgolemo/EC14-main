@@ -148,8 +148,6 @@ class PostprocessingWorker(threading.Thread):
             # get initial coordinates from DB
             indiv = self.db.getIndividual(id)
             first_trace = self.db.getFirstTrace(id)
-            if (first_trace == None):
-                print("\nI HAVE NO IDEA WHY, BUT THERE IS AN INITIAL TRACE MISSING HERE, FOR INDIVIDUAL: {indiv}\n".format(indiv = id))
             self.pp.addStartingPointArenaAndTime(todo, self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
                                                  first_trace["x"], first_trace["y"], indiv["born"], self.end_time)
 
@@ -168,6 +166,9 @@ class PostprocessingWorker(threading.Thread):
                 for i in range(0, len(fileAsList)):
                     traceLine = fileAsList[i].split()
                     traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4]])
+            if (len(traces) == 0):
+                print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(len=len(traces), indiv=id))
+                continue
             if (self.debug):
                 print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
             self.db.addTraces(id, traces)
