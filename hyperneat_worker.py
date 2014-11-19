@@ -147,7 +147,8 @@ class HNWorker(threading.Thread):
             self.db.markAsHyperneated(indiv)
 
         for f in self.hn_stray_files:
-            os.remove(self.hn_path + f)
+            if (os.path.isfile(self.hn_path + f)):
+                os.remove(self.hn_path + f)
 
         self.db.flush()
         pass

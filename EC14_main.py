@@ -168,7 +168,7 @@ class EC14controller():
 
         signal.signal(signal.SIGINT, self.keyboard_exit)
 
-        while (time.time() - self.time_start <= self.wall_time - self.pause_time):
+        while (time.time() - self.time_start < self.wall_time - self.pause_time):
             unfinished = self.db.getUnfinishedIndividuals()
             if unfinished == 0:
                 print("nothing left to do, quiting")
