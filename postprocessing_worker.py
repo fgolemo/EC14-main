@@ -36,7 +36,7 @@ class PostprocessingWorker(threading.Thread):
         self.path_prefix = self.config.get('Experiment', 'path_prefix')
         self.debug = self.config.get('Experiment', 'debug')
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
-        self.queue_length = self.config.get('Postprocessing', 'queue_len')
+        self.queue_length = self.config.getint('Postprocessing', 'queue_len')
         self.pop_path = self.config.get('Postprocessing', 'pop_path')
         self.traces_path = self.config.get('Postprocessing', 'traces_path')
         self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
@@ -68,8 +68,6 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
-                if (self.debug):
-                    print("PP: current queue length is " + str(self.queue_length) + "")
                 queue_partition = self.queue[:self.queue_length]
                 self.queue = self.queue[self.queue_length:]
                 if (self.debug):
