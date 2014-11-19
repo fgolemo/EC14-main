@@ -28,6 +28,7 @@ class PostprocessingWorker(threading.Thread):
     pp = Preprocessor()
     indiv_max_age = 0
     indiv_infertile_span = 0.25
+    queue_length = 1
 
     def readConfig(self, config_path):
         self.config.read(config_path)
@@ -67,6 +68,8 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
+                if (self.debug):
+                    print("PP: current queue length is " + str(self.queue_length) + "")
                 queue_partition = self.queue[:self.queue_length]
                 self.queue = self.queue[self.queue_length:]
                 if (self.debug):
