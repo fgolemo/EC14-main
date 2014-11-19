@@ -138,9 +138,12 @@ class HNWorker(threading.Thread):
                 continue
             if self.debug:
                 print("HN: preprocessing individual " + str(indiv))
-            shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
-            shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
-            os.remove(self.hn_path + self.hn_trash_file.format(indiv))
+            if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_vox)):
+                shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
+            if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_genome)):
+                shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
+            if (os.path.isfile(self.hn_path + self.hn_trash_file.format(indiv))):
+                os.remove(self.hn_path + self.hn_trash_file.format(indiv))
             self.db.markAsHyperneated(indiv)
 
         for f in self.hn_stray_files:
