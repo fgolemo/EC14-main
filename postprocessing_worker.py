@@ -188,6 +188,7 @@ class PostprocessingWorker(threading.Thread):
             mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance)
             i = 0
             while (len(mates) != 0):
+                print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                 i+=1
                 mate = mates[0]
                 parent2 = {}
@@ -200,6 +201,8 @@ class PostprocessingWorker(threading.Thread):
                 self.db.makeBaby(mate, parent2, mate["ltime"], self.indiv_max_age*self.indiv_infertile_span)
 
                 newStart = mate["id"]
+                if (self.debug):
+                    print("PP: looking for more mates for individual {indiv}...".format(indiv=id))
                 mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart)
 
             if (self.debug):
