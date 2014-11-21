@@ -160,7 +160,7 @@ class DB():
                          "z FLOAT NOT NULL, " +
                          "fertile TINYINT(1) DEFAULT 1 NOT NULL, " +
                          "PRIMARY KEY (id), " +
-                         "INDEX `indivfertid` (`indiv_id`, `fertile`, `id`) )")
+                         "INDEX `individ` (`indiv_id`) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          self.tablePrefix+"_offspring " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
