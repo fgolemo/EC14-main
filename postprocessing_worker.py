@@ -169,10 +169,10 @@ class PostprocessingWorker(threading.Thread):
                     traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4]])
             if (len(traces) == 0):
                 print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(len=len(traces), indiv=id))
-                continue
-            if (self.debug):
-                print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
-            self.db.addTraces(id, traces)
+            else:
+                if (self.debug):
+                    print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
+                self.db.addTraces(id, traces)
 
     def calculateOffspring(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
@@ -180,6 +180,8 @@ class PostprocessingWorker(threading.Thread):
         :return: None
         """
         for todo in todos:
+            if (os.path.getsize(todo) == 0):
+                continue
             id = self.getIDfromTrace(todo)
             if (self.debug):
                 print("PP: looking for mates for individual {indiv}...".format(indiv=id))

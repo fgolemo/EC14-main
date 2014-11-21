@@ -159,7 +159,8 @@ class DB():
                          "y FLOAT NOT NULL, " +
                          "z FLOAT NOT NULL, " +
                          "fertile TINYINT(1) DEFAULT 1 NOT NULL, " +
-                         "PRIMARY KEY (id) )")
+                         "PRIMARY KEY (id), " +
+                         "INDEX `indivfertid` (`indiv_id`, `fertile`, `id`) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          self.tablePrefix+"_offspring " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
@@ -284,7 +285,7 @@ class DB():
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0):
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM "+self.tablePrefix+"_traces AS t1 INNER JOIN "+self.tablePrefix+"_traces as t2 " + \
-                "WHERE t1.indiv_id='{indiv_id}' and t2.indiv_id!='{indiv_id}' " + \
+                "WHERE t1.indiv_id={indiv_id} and t2.indiv_id!={indiv_id} " + \
                 "AND t1.fertile = 1 AND t2.fertile = 1 " + \
                 "AND t1.id > {start} " + \
                 "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} " + \
