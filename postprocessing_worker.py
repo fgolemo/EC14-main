@@ -188,9 +188,9 @@ class PostprocessingWorker(threading.Thread):
             mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance)
             i = 0
             while (len(mates) != 0):
-                print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                 i+=1
                 mate = mates[0]
+                print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                 parent2 = {}
                 parent2["id"] = mate["mate_id"]
                 parent2["indiv_id"] = mate["mate_indiv_id"]
