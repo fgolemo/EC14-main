@@ -1,4 +1,5 @@
 config.ini
+config.exp-*.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
