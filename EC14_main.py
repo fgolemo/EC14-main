@@ -40,6 +40,7 @@ class EC14controller():
     mailer = False
     mailer_subject = "Experiment {exp_name} done"
     mailer_content = "Experiment {exp_name} successfully completed. Total population: {pop_total}"
+    walltime_name = "walltime"
 
     random_granularity = 10000.0
 
@@ -98,6 +99,7 @@ class EC14controller():
         self.path_prefix = self.config.get('Experiment', 'path_prefix')
         self.debug = self.config.getboolean('Experiment', 'debug')
         self.wall_time = self.config.getint('Experiment', 'self_wall_time')
+        self.walltime_name = self.config.get('Experiment', 'walltime_name')
         self.end_time = self.config.getfloat('Experiment', 'end_time')
         self.random_granularity = self.config.getfloat('Experiment', 'random_granularity')
 
@@ -181,11 +183,12 @@ class EC14controller():
         logPath = self.base_path + "logs/" + logPrefix
         cwd = os.path.dirname(os.path.realpath(__file__))
 
-        cmd = "qsub -o {logpath}.output.log -e {logpath}.error.log -l walltime={walltime} -v "+\
+        cmd = "qsub -o {logpath}.output.log -e {logpath}.error.log -l {walltime_name}={walltime} -v "+\
               "config={config},run={run},cwd={cwd} {cwd}/scripts/main-resub.sh"
 
         qsub = subprocess.Popen(cmd.format(logpath=logPath,
                                                   walltime=self.wall_time,
+                                                  walltime_name=self.walltime_name,
                                                   config=self.configPath,
                                                   run=self.run + 1,
                                                   cwd=cwd),
