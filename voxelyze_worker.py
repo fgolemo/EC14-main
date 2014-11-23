@@ -1,5 +1,6 @@
 import ConfigParser
 import os
+import re
 import subprocess
 import threading, time
 from db import DB
@@ -28,6 +29,7 @@ class VoxWorker(threading.Thread):
     debug = False
     db = None
     lastPoolFile = 0
+    qreturn_pattern = None
 
     def readConfig(self, config_path):
         self.config.read(config_path)
@@ -56,6 +58,7 @@ class VoxWorker(threading.Thread):
         self.poolFilePath = self.base_path + self.pool_path + self.pool_filename
         self.stopRequest = threading.Event()
         self.submit_script = os.path.dirname(os.path.realpath(__file__)) + "/" + self.submit_script
+        self.qreturn_pattern =  re.compile('\D*([0-9]{6,})\D*')
 
     def run(self):
         """ main thread function
@@ -194,15 +197,16 @@ class VoxWorker(threading.Thread):
             # TODO: and if it fails, we can check the logs immediately
 
     def splitOutputIntoJobname(self, output):
-        out = output.split(".")
-        if (len(out) == 5):
-            return out[0]
-        else:
+        match = self.qreturn_pattern.match(output)
+
+        if not match:
             print("VOX: probably serious error... submitting the job" + \
                   " to the lisa queue didn't return an expected format: ")
             print(output)
             print("...while we expected something like 1234.batch1.lisa.surfsara.nl")
             return "0"
+        else:
+            return match.group(1)
 
     def sendQueue(self, sendList):
         """ submits the queue (or part of it) to the Lisa job queue
