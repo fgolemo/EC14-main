@@ -170,17 +170,20 @@ class VoxWorker(threading.Thread):
 
     def runQsub(self, sendList):
         vox_string = "{base_path} {pool_file} {walltime}"
-        vox_string = vox_string.format(base_path = self.base_path, exp_name = self.exp_name, pool_file = str(self.lastPoolFile), walltime = self.voxelyze_walltime)
+        vox_string = vox_string.format(base_path=self.base_path, exp_name=self.exp_name,
+                                       pool_file=str(self.lastPoolFile), walltime=self.voxelyze_walltime)
         if self.debug:
             print("VOX: calling submit script like this:\n" + self.submit_script + " " + vox_string)
         try:
             cmd = self.submit_script + " " + vox_string
-            output = subprocess.check_output(cmd,
-                                  stderr=open(
-                                      self.base_path + "logs/" + "submit." + str(self.lastPoolFile) + ".stderr.log",
-                                      "w"),
-                                  stdin=open(os.devnull),
-                                  shell=True)
+            output = subprocess.Popen(cmd,
+                                      stderr=open(
+                                          self.base_path + "logs/" + "submit." + str(self.lastPoolFile) + ".stderr.log",
+                                          "w"),
+                                      stdin=open(os.devnull),
+                                      shell=True,
+                                      stdout=subprocess.PIPE).communicate()[0]
+
             jobname = self.splitOutputIntoJobname(output)
             self.db.addJob(jobname, cmd, sendList)
         except subprocess.CalledProcessError as e:
@@ -195,7 +198,8 @@ class VoxWorker(threading.Thread):
         if (len(out) == 5):
             return out[0]
         else:
-            print("VOX: probably serious error... submitting the job to the lisa queue didn't return an expected format: ")
+            print("VOX: probably serious error... submitting the job" + \
+                  " to the lisa queue didn't return an expected format: ")
             print(output)
             print("...while we expected something like 1234.batch1.lisa.surfsara.nl")
             return "0"

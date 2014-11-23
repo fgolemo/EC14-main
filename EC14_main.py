@@ -43,9 +43,6 @@ class EC14controller():
 
     random_granularity = 10000.0
 
-    yes = {'yes', 'y', 'ye'}
-    no = {'no', 'n', ''}
-
     def __init__(self):
         self.config = ConfigParser.RawConfigParser()
 
@@ -187,12 +184,13 @@ class EC14controller():
         cmd = "qsub -o {logpath}.output.log -e {logpath}.error.log -l walltime={walltime} -v "+\
               "config={config},run={run},cwd={cwd} {cwd}/scripts/main-resub.sh"
 
-        qsub = subprocess.check_output(cmd.format(logpath=logPath,
+        qsub = subprocess.Popen(cmd.format(logpath=logPath,
                                                   walltime=self.wall_time,
                                                   config=self.configPath,
                                                   run=self.run + 1,
                                                   cwd=cwd),
-                                       shell=True)
+                                       shell=True,
+                                       stdout=subprocess.PIPE).communicate()[0]
         print("MAIN: resubmitted myself as:" + str(qsub) )
 
     def keyboard_exit(self, signal, frame):
