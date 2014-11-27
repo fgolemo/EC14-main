@@ -168,7 +168,7 @@ class PostprocessingWorker(threading.Thread):
 
         for todo in todos:
             id = self.getIDfromTrace(todo)
-            with open(todo, 'r') as inputFile:
+            with open(self.getPathDuringPP(id), 'r') as inputFile:
                 traces = []
 
                 fileAsList = inputFile.readlines()
