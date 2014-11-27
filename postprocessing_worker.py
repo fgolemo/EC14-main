@@ -68,6 +68,7 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
+                self.queue.sort()
                 queue_partition = self.queue[:self.queue_length]
                 self.queue = self.queue[self.queue_length:]
                 if (self.debug):
