@@ -14,6 +14,9 @@ class PostprocessingWorker(threading.Thread):
     base_path = ""
     pop_path = "population/"
     traces_path = "traces_afterVox/"
+    traces_backup_path = "traces_afterVox_backup/"
+    traces_during_pp_path = "traces_duringPP/"
+    traces_after_pp_path = "traces_afterPP/"
     debug = False
     db = None
     queue = []
@@ -39,6 +42,9 @@ class PostprocessingWorker(threading.Thread):
         self.queue_length = self.config.getint('Postprocessing', 'queue_len')
         self.pop_path = self.config.get('Postprocessing', 'pop_path')
         self.traces_path = self.config.get('Postprocessing', 'traces_path')
+        self.traces_backup_path = self.config.get('Postprocessing', 'traces_backup_path')
+        self.traces_during_pp_path = self.config.get('Postprocessing', 'traces_during_pp_path')
+        self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
         self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
         self.pause_time = self.config.getint('Workers', 'pause_time')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
@@ -74,10 +80,11 @@ class PostprocessingWorker(threading.Thread):
                 if (self.debug):
                     print("PP: found " + str(len(queue_partition)) + " todo(s)")
                 self.markAsVoxelyzed(queue_partition)
+                self.moveFilesToTmp(queue_partition)
                 self.adjustTraceFile(queue_partition)
                 self.traceToDatabase(queue_partition)
                 self.calculateOffspring(queue_partition)
-                self.moveFiles(queue_partition)
+                self.moveFilesToFinal(queue_partition)
                 self.markAsPostprocessed(queue_partition)
                 waitCounter = 0
             else:
@@ -150,7 +157,7 @@ class PostprocessingWorker(threading.Thread):
             # get initial coordinates from DB
             indiv = self.db.getIndividual(id)
             first_trace = self.db.getFirstTrace(id)
-            self.pp.addStartingPointArenaAndTime(todo, self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
+            self.pp.addStartingPointArenaAndTime(self.getPathDuringPP(id), self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
                                                  first_trace["x"], first_trace["y"], indiv["born"], self.end_time)
 
     def traceToDatabase(self, todos):
@@ -211,14 +218,28 @@ class PostprocessingWorker(threading.Thread):
 
         self.db.flush()
 
-    def moveFiles(self, todos):
+    def getPathDuringPP(self, id):
+        return self.base_path + self.traces_during_pp_path + str(id) + ".trace"
+
+    def moveFilesToTmp(self, todos):
         """ once all preprocessing is done, move the files to their target destination
         :param todos: list of strings with the individual IDs
         :return: None
         """
         for indiv in todos:
             id = self.getIDfromTrace(indiv)
-            shutil.move(indiv, self.base_path + self.pop_path + str(id) + ".trace")
+            shutil.copy2(indiv, self.base_path + self.traces_backup_path + str(id) + ".trace")
+            shutil.move(indiv, self.getPathDuringPP(id))
+
+    def moveFilesToFinal(self, todos):
+        """ once all preprocessing is done, move the files to their target destination
+        :param todos: list of strings with the individual IDs
+        :return: None
+        """
+        for indiv in todos:
+            id = self.getIDfromTrace(indiv)
+            shutil.move(self.getPathDuringPP(id),
+                        self.base_path + self.traces_after_pp_path + str(id) + ".trace")
 
     def addFile(self, path):
         self.queue.append(path)
