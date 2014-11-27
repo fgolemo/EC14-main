@@ -229,7 +229,7 @@ class PostprocessingWorker(threading.Thread):
         for indiv in todos:
             id = self.getIDfromTrace(indiv)
             shutil.copy2(indiv, self.base_path + self.traces_backup_path + str(id) + ".trace")
-            shutil.move(indiv, self.getPathDuringPP(id))
+            shutil.copy2(indiv, self.getPathDuringPP(id))
 
     def moveFilesToFinal(self, todos):
         """ once all preprocessing is done, move the files to their target destination
@@ -240,6 +240,7 @@ class PostprocessingWorker(threading.Thread):
             id = self.getIDfromTrace(indiv)
             shutil.move(self.getPathDuringPP(id),
                         self.base_path + self.traces_after_pp_path + str(id) + ".trace")
+            os.remove(indiv)
 
     def addFile(self, path):
         self.queue.append(path)
