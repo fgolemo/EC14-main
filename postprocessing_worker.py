@@ -28,6 +28,7 @@ class PostprocessingWorker(threading.Thread):
     end_time = 0
     timeTolerance = 0.0  # maximum mating time distance
     spaceTolerance = 0.01  # maximum mating distance radius
+    one_child = False
     pp = Preprocessor()
     indiv_max_age = 0
     indiv_infertile_span = 0.25
@@ -48,6 +49,10 @@ class PostprocessingWorker(threading.Thread):
         self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
         self.pause_time = self.config.getint('Workers', 'pause_time')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
+        self.timeTolerance = self.config.getfloat('Mating', 'timeTolerance')
+        self.spaceTolerance = self.config.getfloat('Mating', 'spaceTolerance')
+        self.indiv_infertile_span = self.config.getfloat('Mating', 'indiv_infertile_span')
+        self.one_child = self.config.getfloat('Mating', 'onlyOneChildPerParents')
         self.arena_x = self.config.getfloat('Arena', 'x')
         self.arena_y = self.config.getfloat('Arena', 'y')
         self.arena_type = self.config.get('Arena', 'type')
@@ -193,12 +198,9 @@ class PostprocessingWorker(threading.Thread):
             id = self.getIDfromTrace(todo)
             if (self.debug):
                 print("PP: looking for mates for individual {indiv}...".format(indiv=id))
-            mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance)
+            mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
             i = 0
             while (len(mates) != 0):
-                i+=1
-                mate = mates[0]
-                print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                 parent2 = {}
                 parent2["id"] = mate["mate_id"]
                 parent2["indiv_id"] = mate["mate_indiv_id"]
@@ -206,12 +208,19 @@ class PostprocessingWorker(threading.Thread):
                 parent2["x"] = mate["mate_x"]
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
-                self.db.makeBaby(mate, parent2, mate["ltime"], self.indiv_max_age*self.indiv_infertile_span)
+                if self.one_child and self.db.haveMatedBefore(mate, parent2):
+                   pass
+                else:
+                    i+=1
+                    mate = mates[0]
+                    if (self.debug):
+                        print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
+                    self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child, self.indiv_max_age*self.indiv_infertile_span)
 
                 newStart = mate["id"]
                 if (self.debug):
                     print("PP: looking for more mates for individual {indiv}...".format(indiv=id))
-                mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart)
+                mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart, self.one_child)
 
             if (self.debug):
                 print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))

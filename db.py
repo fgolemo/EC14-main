@@ -266,15 +266,16 @@ class DB():
             "INSERT INTO "+self.tablePrefix+"_offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
         return id
 
-    def makeBaby(self, parent1, parent2, ltime, infertileSpan):
+    def makeBaby(self, parent1, parent2, ltime, single=False, infertileSpan=0.25):
         x = (parent1["x"] + parent2["x"]) / 2
         y = (parent1["y"] + parent2["y"]) / 2
         id = self.createIndividual(ltime, x, y)
         insertString = "INSERT INTO "+self.tablePrefix+"_offspring VALUES (NULL, {parent1}, {parent2}, {child}, {ltime});"
         self.cur.execute(
             insertString.format(parent1=parent1["indiv_id"], parent2=parent2["indiv_id"], child=id, ltime=ltime))
-        self.infertilize(parent1["indiv_id"], ltime, infertileSpan)
-        self.infertilize(parent2["indiv_id"], ltime, infertileSpan)
+        if not single:
+            self.infertilize(parent1["indiv_id"], ltime, infertileSpan)
+            self.infertilize(parent2["indiv_id"], ltime, infertileSpan)
         self.flush()
         return id
 
@@ -282,16 +283,35 @@ class DB():
         updateString = "UPDATE "+self.tablePrefix+"_traces SET fertile = 0 WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
         self.cur.execute(updateString.format(indiv = parent, start = start, end = start + timespan))
 
-    def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0):
+    def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM "+self.tablePrefix+"_traces AS t1 INNER JOIN "+self.tablePrefix+"_traces as t2 " + \
-                "WHERE t1.indiv_id={indiv_id} and t2.indiv_id!={indiv_id} " + \
-                "AND t1.fertile = 1 AND t2.fertile = 1 " + \
-                "AND t1.id > {start} " + \
-                "AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} " + \
-                "AND SQRT( POW(t1.x - t2.x,2) + POW(t1.y - t2.y,2) ) <= {spaceTol} " + \
+                "WHERE t1.indiv_id={indiv_id} and t2.indiv_id!={indiv_id} "
+        if not single:
+            query +="AND t1.fertile = 1 AND t2.fertile = 1 "
+
+        query +="AND t1.id > {start} "
+
+        if timeTolerance > 0:
+            query +="AND t1.ltime >= t2.ltime-{timeTol} AND t1.ltime <= t2.ltime+{timeTol} "
+        else:
+            query +="AND t1.ltime = t2.ltime "
+
+        query +="AND SQRT( POW(t1.x - t2.x,2) + POW(t1.y - t2.y,2) ) <= {spaceTol} " + \
                 "LIMIT 1"
+
         print ("DB: query:")
         print (query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance, start=startTrace))
         self.cur.execute(query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance, start=startTrace))
         return self.cur.fetchall()
+
+    def haveMatedBefore(self, parent1, parent2):
+        query = "SELECT id FROM "+self.tablePrefix+"_offspring "+\
+                "WHERE (parent1_id = {parent1} AND parent2_id = {parent2}) "+\
+                "OR (parent1_id = {parent2} AND parent2_id = {parent1})"
+        self.cur.execute(query.format(parent1 = parent1["indiv_id"], parent2 = parent2["indiv_id"]))
+        res = self.cur.fetchall()
+        if len(res) > 0:
+            return True
+        else:
+            return False
