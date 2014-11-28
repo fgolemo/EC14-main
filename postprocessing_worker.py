@@ -36,27 +36,32 @@ class PostprocessingWorker(threading.Thread):
 
     def readConfig(self, config_path):
         self.config.read(config_path)
-        self.exp_name = self.config.get('Experiment', 'name')
-        self.path_prefix = self.config.get('Experiment', 'path_prefix')
-        self.debug = self.config.get('Experiment', 'debug')
-        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
-        self.queue_length = self.config.getint('Postprocessing', 'queue_len')
-        self.pop_path = self.config.get('Postprocessing', 'pop_path')
-        self.traces_path = self.config.get('Postprocessing', 'traces_path')
-        self.traces_backup_path = self.config.get('Postprocessing', 'traces_backup_path')
-        self.traces_during_pp_path = self.config.get('Postprocessing', 'traces_during_pp_path')
+        self.exp_name =     self.config.get('Experiment', 'name')
+        self.path_prefix =  self.config.get('Experiment', 'path_prefix')
+        self.debug =        self.config.get('Experiment', 'debug')
+        self.end_time =     self.config.getfloat('Experiment', 'end_time')
+
+        self.base_path =            os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        self.queue_length =         self.config.getint('Postprocessing', 'queue_len')
+        self.pop_path =             self.config.get('Postprocessing', 'pop_path')
+        self.traces_path =          self.config.get('Postprocessing', 'traces_path')
+        self.traces_backup_path =   self.config.get('Postprocessing', 'traces_backup_path')
+        self.traces_during_pp_path =self.config.get('Postprocessing', 'traces_during_pp_path')
         self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
-        self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
-        self.pause_time = self.config.getint('Workers', 'pause_time')
+        self.vox_preamble =         self.config.getint('Postprocessing', 'vox_preamble')
+
+        self.pause_time =       self.config.getint('Workers', 'pause_time')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
-        self.timeTolerance = self.config.getfloat('Mating', 'timeTolerance')
-        self.spaceTolerance = self.config.getfloat('Mating', 'spaceTolerance')
+
+        self.timeTolerance =    self.config.getfloat('Mating', 'timeTolerance')
+        self.spaceTolerance =   self.config.getfloat('Mating', 'spaceTolerance')
         self.indiv_infertile_span = self.config.getfloat('Mating', 'indiv_infertile_span')
-        self.one_child = self.config.getfloat('Mating', 'onlyOneChildPerParents')
-        self.arena_x = self.config.getfloat('Arena', 'x')
-        self.arena_y = self.config.getfloat('Arena', 'y')
-        self.arena_type = self.config.get('Arena', 'type')
-        self.end_time = self.config.getfloat('Experiment', 'end_time')
+        self.one_child =        self.config.getboolean('Mating', 'onlyOneChildPerParents')
+
+        self.arena_x =      self.config.getfloat('Arena', 'x')
+        self.arena_y =      self.config.getfloat('Arena', 'y')
+        self.arena_type =   self.config.get('Arena', 'type')
+
         self.indiv_max_age = self.config.getfloat('Population', 'indiv_max_age')
 
     def __init__(self, dbParams, config_path):
