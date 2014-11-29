@@ -218,7 +218,8 @@ class PostprocessingWorker(threading.Thread):
                 parent2["x"] = mate["mate_x"]
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
-                if self.one_child and mate["mate_indiv_id"] not in positive_mates and self.db.haveMatedBefore(mate, parent2):
+
+                if self.one_child and (mate["mate_indiv_id"] in positive_mates or self.db.haveMatedBefore(mate, parent2)):
                    pass
                 else:
                     i+=1
