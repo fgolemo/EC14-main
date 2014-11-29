@@ -208,6 +208,7 @@ class PostprocessingWorker(threading.Thread):
                 print("PP: looking for mates for individual {indiv}...".format(indiv=id))
             mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
             i = 0
+            positive_mates = []
             while (len(mates) != 0):
                 mate = mates[0]
                 parent2 = {}
@@ -217,12 +218,13 @@ class PostprocessingWorker(threading.Thread):
                 parent2["x"] = mate["mate_x"]
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
-                if self.one_child and self.db.haveMatedBefore(mate, parent2):
+                if self.one_child and mate["mate_indiv_id"] not in positive_mates and self.db.haveMatedBefore(mate, parent2):
                    pass
                 else:
                     i+=1
                     if (self.debug):
                         print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
+                    positive_mates.append(mate["mate_indiv_id"])
                     babies.append([mate, parent2, mate["ltime"]])
 
                 newStart = mate["id"]
