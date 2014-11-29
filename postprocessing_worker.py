@@ -223,7 +223,7 @@ class PostprocessingWorker(threading.Thread):
                     i+=1
                     if (self.debug):
                         print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
-                    babies.push([mate, parent2, mate["ltime"]])
+                    babies.append([mate, parent2, mate["ltime"]])
 
                 newStart = mate["id"]
                 if (self.debug):
