@@ -93,7 +93,8 @@ class PostprocessingWorker(threading.Thread):
                 self.moveFilesToTmp(queue_partition)
                 self.adjustTraceFile(queue_partition)
                 self.traceToDatabase(queue_partition)
-                self.calculateOffspring(queue_partition)
+                babies = self.calculateOffspring(queue_partition)
+                self.makeBabies(babies)
                 self.moveFilesToFinal(queue_partition)
                 self.markAsPostprocessed(queue_partition)
                 waitCounter = 0
@@ -197,6 +198,8 @@ class PostprocessingWorker(threading.Thread):
         :param todos: list of strings with the individual IDs
         :return: None
         """
+        babies =[]
+
         for todo in todos:
             if (os.path.getsize(todo) == 0):
                 continue
@@ -220,17 +223,25 @@ class PostprocessingWorker(threading.Thread):
                     i+=1
                     if (self.debug):
                         print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
-                    self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child, self.indiv_max_age*self.indiv_infertile_span)
+                    babies.push([mate, parent2, mate["ltime"]])
 
                 newStart = mate["id"]
                 if (self.debug):
                     print("PP: looking for more mates for individual {indiv}...".format(indiv=id))
-                mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart, self.one_child)
+
+                if self.one_child:
+                    mates.pop(0)
+                else:
+                    mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart, self.one_child)
 
             if (self.debug):
                 print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
-
         self.db.flush()
+        return babies
+
+    def makeBabies(self, babies):
+        for baby in babies:
+            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child, self.indiv_max_age*self.indiv_infertile_span)
 
     def getPathDuringPP(self, id):
         return self.base_path + self.traces_during_pp_path + str(id) + ".trace"
