@@ -308,10 +308,13 @@ class DB():
         return self.cur.fetchall()
 
     def haveMatedBefore(self, parent1, parent2):
+        self.flush()
         query = "SELECT id FROM "+self.tablePrefix+"_offspring "+\
                 "WHERE (parent1_id = {parent1} AND parent2_id = {parent2}) "+\
                 "OR (parent1_id = {parent2} AND parent2_id = {parent1})"
-        self.cur.execute(query.format(parent1 = parent1["indiv_id"], parent2 = parent2["indiv_id"]))
+        query_filled = query.format(parent1 = parent1["indiv_id"], parent2 = parent2["indiv_id"])
+        print(query_filled)
+        self.cur.execute(query_filled)
         res = self.cur.fetchall()
         if len(res) > 0:
             return True
