@@ -219,7 +219,7 @@ class PostprocessingWorker(threading.Thread):
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
 
-                if self.one_child and (mate["mate_indiv_id"] in positive_mates or self.db.haveMatedBefore(mate, parent2)):
+                if self.one_child and (mate["mate_indiv_id"] in positive_mates or self.db.haveMatedBefore(mate, parent2) or self.db.isParentOf(id, parent2["indiv_id"])):
                    pass
                 else:
                     i+=1

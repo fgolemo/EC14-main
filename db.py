@@ -319,3 +319,16 @@ class DB():
             return True
         else:
             return False
+
+    def isParentOf(self, child, parent):
+        self.flush()
+        query = "SELECT id FROM "+self.tablePrefix+"_offspring "+\
+                "WHERE child_id = {child} AND "+\
+                "(parent1_id = {parent} or parent2_id = {parent})"
+        query_filled = query.format(parent = parent, child = child)
+        self.cur.execute(query_filled)
+        res = self.cur.fetchall()
+        if len(res) > 0:
+            return True
+        else:
+            return False
