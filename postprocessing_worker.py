@@ -229,7 +229,7 @@ class PostprocessingWorker(threading.Thread):
                     babies.append([mate, parent2, mate["ltime"]])
 
                 newStart = mate["id"]
-                if (self.debug):
+                if self.one_child and self.debug:
                     print("PP: looking for more mates for individual {indiv}...".format(indiv=id))
 
                 if self.one_child:
