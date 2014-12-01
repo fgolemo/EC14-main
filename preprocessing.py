@@ -41,7 +41,7 @@ class Preprocessor():
             outputFile.write("".join(fileAsList))
             outputFile.close()
 
-    def forceStep(val, step):
+    def forceStep(self, val, step):
         a = val/step
         b = math.floor(a)
         c = b * step
