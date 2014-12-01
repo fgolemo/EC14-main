@@ -11,15 +11,19 @@ class DB():
     keys_traces = []
     keys_offspring = []
     tablePrefix = ""
-    maxQueries = 3
+    maxQueries = 1
     currentQueries = 0
     connectionString = ""
 
     def connect(self):
         if (self.cur):
             self.cur.close()
+            print("DB: closed cursor")
         if (self.con):
             self.con.close()
+            print("DB: closed conn")
+        self.cur = None
+        self.con = None
 
         components = self.connectionString.split("@")
         if len(components) != 2:
@@ -297,9 +301,9 @@ class DB():
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
         self.currentQueries += 1
         if self.currentQueries > self.maxQueries:
-            print ("PP: reached max numbers of long queries, reconnecting...")
+            print ("DB: reached max numbers of long queries, reconnecting...")
             self.connect()
-            print ("PP: ...reconnect done.")
+            print ("DB: ...reconnect done.")
             self.currentQueries = 1
 
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
