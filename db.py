@@ -299,12 +299,12 @@ class DB():
         self.cur.execute(updateString.format(indiv = parent, start = start, end = start + timespan))
 
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
-        self.currentQueries += 1
-        if self.currentQueries > self.maxQueries:
-            print ("DB: reached max numbers of long queries, reconnecting...")
-            self.connect()
-            print ("DB: ...reconnect done.")
-            self.currentQueries = 1
+        # self.currentQueries += 1
+        # if self.currentQueries > self.maxQueries:
+        #     print ("DB: reached max numbers of long queries, reconnecting...")
+        #     self.connect()
+        #     print ("DB: ...reconnect done.")
+        #     self.currentQueries = 1
 
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM "+self.tablePrefix+"_traces AS t1 INNER JOIN "+self.tablePrefix+"_traces as t2 " + \
@@ -323,6 +323,8 @@ class DB():
 
         if not single:
             query +="LIMIT 1"
+        else:
+            query +="GROUP BY mate_indiv_id"
 
         print ("DB: query:")
         print (query.format(indiv_id=id, timeTol=timeTolerance, spaceTol=spaceTolerance, start=startTrace))
