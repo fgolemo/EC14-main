@@ -1,5 +1,6 @@
 import random
 import sys
+import math
 
 
 class Preprocessor():
@@ -40,8 +41,15 @@ class Preprocessor():
             outputFile.write("".join(fileAsList))
             outputFile.close()
 
-    def correctBirth(self, coordinates, birthX, birthY, birthTime, endTime):
-        coordinates[1] = float(coordinates[1]) + birthTime
+    def forceStep(val, step):
+        a = val/step
+        b = math.floor(a)
+        c = b * step
+        return c
+
+
+    def correctBirth(self, coordinates, birthX, birthY, birthTime, endTime, step):
+        coordinates[1] = self.forceStep(float(coordinates[1]) + birthTime, step)
         if (coordinates[1] > endTime):
             return False
         coordinates[2] = float(coordinates[2]) + birthX
@@ -75,7 +83,7 @@ class Preprocessor():
         coordinates[3] = str(coordinates[3])
         return coordinates
 
-    def addStartingPointArenaAndTime(self, filename, vox_preamble=8, arenaX=5, arenaY=5, arenaType="i", birthX=0, birthY=0, birthTime=0, endTime=120):
+    def addStartingPointArenaAndTime(self, filename, vox_preamble=8, arenaX=5, arenaY=5, arenaType="i", birthX=0, birthY=0, birthTime=0, endTime=120, timestep=0.002865):
         with open(filename, 'r') as inputFile:
             fileAsList = inputFile.readlines()
             lastLocation = len(fileAsList)-1
@@ -84,7 +92,7 @@ class Preprocessor():
                 coordinates = fileAsList[i].split()
 
                 # birth correction
-                coordinates = self.correctBirth(coordinates, birthX, birthY, birthTime, endTime)
+                coordinates = self.correctBirth(coordinates, birthX, birthY, birthTime, endTime, timestep)
                 if (coordinates == False): # then the individual lived past the time limit
                     break
 

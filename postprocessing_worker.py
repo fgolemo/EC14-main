@@ -33,6 +33,7 @@ class PostprocessingWorker(threading.Thread):
     indiv_max_age = 0
     indiv_infertile_span = 0.25
     queue_length = 1
+    timestep = 0.002865
 
     def readConfig(self, config_path):
         self.config.read(config_path)
@@ -49,6 +50,7 @@ class PostprocessingWorker(threading.Thread):
         self.traces_during_pp_path =self.config.get('Postprocessing', 'traces_during_pp_path')
         self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
         self.vox_preamble =         self.config.getint('Postprocessing', 'vox_preamble')
+        self.timestep =             self.config.getint('Postprocessing', 'timestep')
 
         self.pause_time =       self.config.getint('Workers', 'pause_time')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
@@ -169,7 +171,7 @@ class PostprocessingWorker(threading.Thread):
             indiv = self.db.getIndividual(id)
             first_trace = self.db.getFirstTrace(id)
             self.pp.addStartingPointArenaAndTime(self.getPathDuringPP(id), self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
-                                                 first_trace["x"], first_trace["y"], indiv["born"], self.end_time)
+                                                 first_trace["x"], first_trace["y"], indiv["born"], self.end_time, self.timestep)
 
     def traceToDatabase(self, todos):
         """ put the individuals into the database
