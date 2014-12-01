@@ -50,7 +50,7 @@ class PostprocessingWorker(threading.Thread):
         self.traces_during_pp_path =self.config.get('Postprocessing', 'traces_during_pp_path')
         self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
         self.vox_preamble =         self.config.getint('Postprocessing', 'vox_preamble')
-        self.timestep =             self.config.getint('Postprocessing', 'timestep')
+        self.timestep =             self.config.getfloat('Postprocessing', 'timestep')
 
         self.pause_time =       self.config.getint('Workers', 'pause_time')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
