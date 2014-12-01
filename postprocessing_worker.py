@@ -106,7 +106,8 @@ class PostprocessingWorker(threading.Thread):
                 self.adjustTraceFile(queue_partition)
                 self.traceToDatabase(queue_partition)
                 babies = self.calculateOffspring(queue_partition)
-                self.makeBabies(babies)
+                if self.one_child:
+                    self.makeBabies(babies)
                 self.moveFilesToFinal(queue_partition)
                 self.markAsPostprocessed(queue_partition)
                 waitCounter = 0
@@ -237,8 +238,11 @@ class PostprocessingWorker(threading.Thread):
                     i+=1
                     if (self.debug):
                         print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
-                    positive_mates.append(mate["mate_indiv_id"])
-                    babies.append([mate, parent2, mate["ltime"]])
+                    if not self.one_child:
+                        self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child, self.indiv_max_age*self.indiv_infertile_span)
+                    else:
+                        positive_mates.append(mate["mate_indiv_id"])
+                        babies.append([mate, parent2, mate["ltime"]])
 
                 newStart = mate["id"]
                 if self.one_child and self.debug:
