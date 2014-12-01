@@ -149,6 +149,7 @@ class DB():
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_individuals")
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_traces")
+        self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_firsttraces")
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_offspring")
         self.cur.execute("DROP TABLE IF EXISTS "+self.tablePrefix+"_jobs")
         self.cur.execute("SET sql_notes = 1")
@@ -167,6 +168,17 @@ class DB():
                          "PRIMARY KEY (id) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          self.tablePrefix+"_traces " +
+                         "(id INT NOT NULL AUTO_INCREMENT, " +
+                         "indiv_id INT NOT NULL, " +
+                         "ltime FLOAT NOT NULL, " +
+                         "x FLOAT NOT NULL, " +
+                         "y FLOAT NOT NULL, " +
+                         "z FLOAT NOT NULL, " +
+                         "fertile TINYINT(1) DEFAULT 1 NOT NULL, " +
+                         "PRIMARY KEY (id), " +
+                         "INDEX `individ` (`indiv_id`) )")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS " +
+                         self.tablePrefix+"_firsttraces " +
                          "(id INT NOT NULL AUTO_INCREMENT, " +
                          "indiv_id INT NOT NULL, " +
                          "ltime FLOAT NOT NULL, " +
@@ -200,7 +212,7 @@ class DB():
         self.cur.execute("INSERT INTO "+self.tablePrefix+"_individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0, 0);")
         individual_id = self.getLastInsertID()
         self.cur.execute(
-            "INSERT INTO "+self.tablePrefix+"_traces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
+            "INSERT INTO "+self.tablePrefix+"_firsttraces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
                 y) + "', 0, 1);")
         self.flush()
         print ("created individual: " + individual_id)
@@ -211,7 +223,7 @@ class DB():
         firstTrace = self.getFirstTrace(id)
         insertSting = "INSERT INTO "+self.tablePrefix+"_traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
         self.cur.executemany(insertSting, traces)
-        self.cur.execute("DELETE FROM "+self.tablePrefix+"_traces WHERE id={id};".format(id=firstTrace["id"]))
+        # self.cur.execute("DELETE FROM "+self.tablePrefix+"_traces WHERE id={id};".format(id=firstTrace["id"]))
         self.flush()
 
     def getPopulationTotal(self):
@@ -234,7 +246,7 @@ class DB():
 
     def getFirstTrace(self, id):
         self.flush()
-        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_traces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC LIMIT 1")
+        self.cur.execute("SELECT * FROM "+self.tablePrefix+"_firsttraces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC LIMIT 1")
         # return dict(zip(self.keys_traces, self.cur.fetchone()))
         return self.cur.fetchone()
 
