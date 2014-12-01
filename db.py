@@ -11,13 +11,17 @@ class DB():
     keys_traces = []
     keys_offspring = []
     tablePrefix = ""
+    maxQueries = 3
+    currentQueries = 0
+    connectionString = ""
 
-    def __init__(self, connectionString, tablePrefix, maxSimTime=0, maxAge=0):
-        self.maxSimTime = maxSimTime
-        self.maxAge = maxAge
-        self.tablePrefix = tablePrefix
+    def connect(self):
+        if (self.cur):
+            self.cur.close()
+        if (self.con):
+            self.con.close()
 
-        components = connectionString.split("@")
+        components = self.connectionString.split("@")
         if len(components) != 2:
             raise ValueError("connection string did have more or less than 1 @ symbol")
 
@@ -38,6 +42,13 @@ class DB():
 
         self.con = mysql.connector.connect(**config)
         self.cur = self.con.cursor(dictionary=True)
+
+    def __init__(self, connectionString, tablePrefix, maxSimTime=0, maxAge=0):
+        self.maxSimTime = maxSimTime
+        self.maxAge = maxAge
+        self.tablePrefix = tablePrefix
+        self.connectionString = connectionString
+        self.connect()
 
     def test(self):
         # TODO: test db connection
@@ -284,6 +295,10 @@ class DB():
         self.cur.execute(updateString.format(indiv = parent, start = start, end = start + timespan))
 
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
+        self.currentQueries += 1
+        if self.currentQueries > self.maxQueries:
+            self.connect()
+
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM "+self.tablePrefix+"_traces AS t1 INNER JOIN "+self.tablePrefix+"_traces as t2 " + \
                 "WHERE t1.indiv_id={indiv_id} and t2.indiv_id!={indiv_id} "
