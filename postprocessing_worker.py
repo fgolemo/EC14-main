@@ -73,6 +73,16 @@ class PostprocessingWorker(threading.Thread):
 
         self.stopRequest = threading.Event()
 
+    def compareQueue(self, item1, item2):
+        id1 = int(self.getIDfromTrace(item1))
+        id2 = int(self.getIDfromTrace(item2))
+        if (id1 < id2):
+            return -1
+        elif (id1 > id2):
+            return 1
+        else:
+            return 0
+
     def run(self):
         """ main thread function
         :return: None
@@ -86,7 +96,7 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
-                self.queue.sort()
+                self.queue = sorted(self.queue, cmp=self.compareQueue)
                 queue_partition = self.queue[:self.queue_length]
                 self.queue = self.queue[self.queue_length:]
                 if (self.debug):
