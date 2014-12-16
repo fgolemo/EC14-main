@@ -368,3 +368,20 @@ class DB():
             return True
         else:
             return False
+
+    def getOtherBotsInArea(self, ltime, x, y, radius):
+        self.flush()
+        query = "SELECT COUNT(id) FROM "+self.tablePrefix+"_{table} "+\
+                "WHERE ltime = {ltime} AND "+\
+                "SQRT( POW(x - {x},2) + POW(y - {y},2) ) <= {radius}"
+        query_filled = query.format(ltime = ltime, x = x, y = y, radius = radius, table = "traces")
+        self.cur.execute(query_filled)
+        result = self.cur.fetchall()
+        voxed = result[0]['COUNT(id)']
+
+        query_filled = query.format(ltime = ltime, x = x, y = y, radius = radius, table = "firsttraces")
+        self.cur.execute(query_filled)
+        result = self.cur.fetchall()
+        unvoxed = result[0]['COUNT(id)']
+
+        return voxed + unvoxed

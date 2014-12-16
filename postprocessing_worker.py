@@ -29,6 +29,10 @@ class PostprocessingWorker(threading.Thread):
     timeTolerance = 0.0  # maximum mating time distance
     spaceTolerance = 0.01  # maximum mating distance radius
     one_child = False
+    infertile_birth = False
+    area_birthcontrol = False
+    area_birthcontrol_radius = 0.05
+    area_birthcontrol_cutoff = 25
     pp = Preprocessor()
     indiv_max_age = 0
     indiv_infertile_span = 0.25
@@ -37,32 +41,36 @@ class PostprocessingWorker(threading.Thread):
 
     def readConfig(self, config_path):
         self.config.read(config_path)
-        self.exp_name =     self.config.get('Experiment', 'name')
-        self.path_prefix =  self.config.get('Experiment', 'path_prefix')
-        self.debug =        self.config.get('Experiment', 'debug')
-        self.end_time =     self.config.getfloat('Experiment', 'end_time')
+        self.exp_name = self.config.get('Experiment', 'name')
+        self.path_prefix = self.config.get('Experiment', 'path_prefix')
+        self.debug = self.config.get('Experiment', 'debug')
+        self.end_time = self.config.getfloat('Experiment', 'end_time')
 
-        self.base_path =            os.path.expanduser(self.path_prefix + self.exp_name) + "/"
-        self.queue_length =         self.config.getint('Postprocessing', 'queue_len')
-        self.pop_path =             self.config.get('Postprocessing', 'pop_path')
-        self.traces_path =          self.config.get('Postprocessing', 'traces_path')
-        self.traces_backup_path =   self.config.get('Postprocessing', 'traces_backup_path')
-        self.traces_during_pp_path =self.config.get('Postprocessing', 'traces_during_pp_path')
+        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+        self.queue_length = self.config.getint('Postprocessing', 'queue_len')
+        self.pop_path = self.config.get('Postprocessing', 'pop_path')
+        self.traces_path = self.config.get('Postprocessing', 'traces_path')
+        self.traces_backup_path = self.config.get('Postprocessing', 'traces_backup_path')
+        self.traces_during_pp_path = self.config.get('Postprocessing', 'traces_during_pp_path')
         self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
-        self.vox_preamble =         self.config.getint('Postprocessing', 'vox_preamble')
-        self.timestep =             self.config.getfloat('Postprocessing', 'timestep')
+        self.vox_preamble = self.config.getint('Postprocessing', 'vox_preamble')
+        self.timestep = self.config.getfloat('Postprocessing', 'timestep')
 
-        self.pause_time =       self.config.getint('Workers', 'pause_time')
+        self.pause_time = self.config.getint('Workers', 'pause_time')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
 
-        self.timeTolerance =    self.config.getfloat('Mating', 'timeTolerance')
-        self.spaceTolerance =   self.config.getfloat('Mating', 'spaceTolerance')
+        self.timeTolerance = self.config.getfloat('Mating', 'timeTolerance')
+        self.spaceTolerance = self.config.getfloat('Mating', 'spaceTolerance')
         self.indiv_infertile_span = self.config.getfloat('Mating', 'indiv_infertile_span')
-        self.one_child =        self.config.getboolean('Mating', 'onlyOneChildPerParents')
+        self.one_child = self.config.getboolean('Mating', 'onlyOneChildPerParents')
+        self.infertile_birth = self.config.getboolean('Mating', 'infertileAfterBirth')
+        self.area_birthcontrol = self.config.getboolean('Mating', 'areaBirthControl')
+        self.area_birthcontrol_radius = self.config.getfloat('Mating', 'areaBirthControlRadius')
+        self.area_birthcontrol_cutoff = self.config.getfloat('Mating', 'areaBirthControlCutoff')
 
-        self.arena_x =      self.config.getfloat('Arena', 'x')
-        self.arena_y =      self.config.getfloat('Arena', 'y')
-        self.arena_type =   self.config.get('Arena', 'type')
+        self.arena_x = self.config.getfloat('Arena', 'x')
+        self.arena_y = self.config.getfloat('Arena', 'y')
+        self.arena_type = self.config.get('Arena', 'type')
 
         self.indiv_max_age = self.config.getfloat('Population', 'indiv_max_age')
 
@@ -146,7 +154,7 @@ class PostprocessingWorker(threading.Thread):
         """ upon start check if there are files in the target diretory, because the watcher only notices files being moved there while running
         :return: None
         """
-        unprocessed = [ os.path.join(path,f) for f in os.listdir(path) if os.path.isfile(os.path.join(path,f)) ]
+        unprocessed = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         for todo in unprocessed:
             if todo not in self.queue:
                 self.addFile(todo)
@@ -181,8 +189,16 @@ class PostprocessingWorker(threading.Thread):
             # get initial coordinates from DB
             indiv = self.db.getIndividual(id)
             first_trace = self.db.getFirstTrace(id)
-            self.pp.addStartingPointArenaAndTime(self.getPathDuringPP(id), self.vox_preamble, self.arena_x, self.arena_y, self.arena_type,
-                                                 first_trace["x"], first_trace["y"], indiv["born"], self.end_time, self.timestep)
+            self.pp.addStartingPointArenaAndTime(self.getPathDuringPP(id),
+                                                 self.vox_preamble,
+                                                 self.arena_x,
+                                                 self.arena_y,
+                                                 self.arena_type,
+                                                 first_trace["x"],
+                                                 first_trace["y"],
+                                                 indiv["born"],
+                                                 self.end_time,
+                                                 self.timestep)
 
     def traceToDatabase(self, todos):
         """ put the individuals into the database
@@ -200,18 +216,24 @@ class PostprocessingWorker(threading.Thread):
                     traceLine = fileAsList[i].split()
                     traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4]])
             if (len(traces) == 0):
-                print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(len=len(traces), indiv=id))
+                print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(
+                    len=len(traces), indiv=id))
             else:
                 if (self.debug):
                     print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
                 self.db.addTraces(id, traces)
+
+    def getPotentialBirthplace(self, parent1, parent2):
+        x = (parent1["x"] + parent2["x"]) / 2
+        y = (parent1["y"] + parent2["y"]) / 2
+        return [x, y]
 
     def calculateOffspring(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
         :param todos: list of strings with the individual IDs
         :return: None
         """
-        babies =[]
+        babies = []
 
         for todo in todos:
             if (os.path.getsize(todo) == 0):
@@ -232,14 +254,32 @@ class PostprocessingWorker(threading.Thread):
                 parent2["y"] = mate["mate_y"]
                 parent2["z"] = mate["mate_z"]
 
-                if self.one_child and (mate["mate_indiv_id"] in positive_mates or self.db.haveMatedBefore(mate, parent2) or self.db.isParentOf(id, parent2["indiv_id"])):
-                   pass
-                else:
-                    i+=1
+                abcOkay = True  # if the area birth control is okay with the mating
+                if (self.area_birthcontrol):
                     if (self.debug):
-                        print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
+                        print("PP: birth control is activated, checking vicinity for other bots")
+                    birthCoords = self.getPotentialBirthplace(mate, parent2)
+                    otherBotsInArea = self.db.getOtherBotsInArea(mate["ltime"], birthCoords[0], birthCoords[1],
+                                                                 self.area_birthcontrol_radius)
+                    if (self.debug):
+                        print("PP: found {bots} other bots at the potential birth place".format(bots=otherBotsInArea))
+                    if (otherBotsInArea > self.area_birthcontrol_cutoff):
+                        abcOkay = False
+                        if (self.debug):
+                            print("PP: CANNOT ALLOW MATING IN THIS AREA. Too many other bots.")
+
+                if not abcOkay or (self.one_child and (mate["mate_indiv_id"] in positive_mates or
+                                           self.db.haveMatedBefore(mate, parent2) or
+                                           self.db.isParentOf(id, parent2["indiv_id"])) ):
+                    pass
+                else:
+                    i += 1
+                    if (self.debug):
+                        print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(
+                            len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                     if not self.one_child:
-                        self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child, self.indiv_max_age*self.indiv_infertile_span)
+                        self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child,
+                                         self.indiv_max_age * self.indiv_infertile_span)
                     else:
                         positive_mates.append(mate["mate_indiv_id"])
                         babies.append([mate, parent2, mate["ltime"]])
@@ -260,7 +300,7 @@ class PostprocessingWorker(threading.Thread):
 
     def makeBabies(self, babies):
         for baby in babies:
-            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child, self.indiv_max_age*self.indiv_infertile_span)
+            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child, self.indiv_max_age * self.indiv_infertile_span)
 
     def getPathDuringPP(self, id):
         return self.base_path + self.traces_during_pp_path + str(id) + ".trace"
