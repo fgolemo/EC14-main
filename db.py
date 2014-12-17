@@ -371,8 +371,9 @@ class DB():
 
     def getOtherBotsInArea(self, ltime, x, y, radius):
         self.flush()
+        #TODO: this ltime+0...1 -0...1 is dirty, I KNOW, any better solutions are welcome
         query = "SELECT COUNT(id) FROM "+self.tablePrefix+"_{table} "+\
-                "WHERE ltime = {ltime} AND "+\
+                "WHERE ltime >= {ltime}-0.0001 AND ltime <= {ltime}+0.0001 AND "+\
                 "SQRT( POW(x - {x},2) + POW(y - {y},2) ) <= {radius}"
         query_filled = query.format(ltime = ltime, x = x, y = y, radius = radius, table = "traces")
         self.cur.execute(query_filled)

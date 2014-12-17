@@ -271,7 +271,7 @@ class PostprocessingWorker(threading.Thread):
                 if not abcOkay or (self.one_child and (mate["mate_indiv_id"] in positive_mates or
                                            self.db.haveMatedBefore(mate, parent2) or
                                            self.db.isParentOf(id, parent2["indiv_id"])) ):
-                    pass
+                    pass # don't create a mate with this partner.
                 else:
                     i += 1
                     if (self.debug):
