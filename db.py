@@ -221,7 +221,7 @@ class DB():
 
     def addTraces(self, id, traces):
         firstTrace = self.getFirstTrace(id)
-        insertSting = "INSERT INTO "+self.tablePrefix+"_traces VALUES (NULL, %s, %s, %s, %s, %s, 1);"
+        insertSting = "INSERT INTO "+self.tablePrefix+"_traces VALUES (NULL, %s, %s, %s, %s, %s, %s);"
         self.cur.executemany(insertSting, traces)
         # self.cur.execute("DELETE FROM "+self.tablePrefix+"_traces WHERE id={id};".format(id=firstTrace["id"]))
         self.flush()
@@ -321,8 +321,8 @@ class DB():
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM "+self.tablePrefix+"_traces AS t1 INNER JOIN "+self.tablePrefix+"_traces as t2 " + \
                 "WHERE t1.indiv_id={indiv_id} and t2.indiv_id!={indiv_id} "
-        if not single:
-            query +="AND t1.fertile = 1 AND t2.fertile = 1 "
+        #if not single:
+        query +="AND t1.fertile = 1 AND t2.fertile = 1 "
 
         query +="AND t1.id > {start} "
 

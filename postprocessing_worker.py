@@ -30,6 +30,7 @@ class PostprocessingWorker(threading.Thread):
     spaceTolerance = 0.01  # maximum mating distance radius
     one_child = False
     infertile_birth = False
+    infertile_birth_percent = 0.1
     area_birthcontrol = False
     area_birthcontrol_radius = 0.05
     area_birthcontrol_cutoff = 25
@@ -64,6 +65,7 @@ class PostprocessingWorker(threading.Thread):
         self.indiv_infertile_span = self.config.getfloat('Mating', 'indiv_infertile_span')
         self.one_child = self.config.getboolean('Mating', 'onlyOneChildPerParents')
         self.infertile_birth = self.config.getboolean('Mating', 'infertileAfterBirth')
+        self.infertile_birth_percent = self.config.getfloat('Mating', 'infertileAfterBirthPercentage')
         self.area_birthcontrol = self.config.getboolean('Mating', 'areaBirthControl')
         self.area_birthcontrol_radius = self.config.getfloat('Mating', 'areaBirthControlRadius')
         self.area_birthcontrol_cutoff = self.config.getfloat('Mating', 'areaBirthControlCutoff')
@@ -212,9 +214,14 @@ class PostprocessingWorker(threading.Thread):
                 traces = []
 
                 fileAsList = inputFile.readlines()
-                for i in range(0, len(fileAsList)):
+                fileLen = len(fileAsList)
+                for i in range(0, fileLen):
+                    fertile = 1
+                    if (self.infertile_birth):
+                        if (i <= self.infertile_birth_percent * fileLen):
+                            fertile = 0
                     traceLine = fileAsList[i].split()
-                    traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4]])
+                    traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4], fertile])
             if (len(traces) == 0):
                 print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(
                     len=len(traces), indiv=id))
