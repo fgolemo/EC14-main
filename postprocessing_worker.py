@@ -179,6 +179,7 @@ class PostprocessingWorker(threading.Thread):
         for todo in todos:
             id = self.getIDfromTrace(todo)
             self.db.markAsPostprocessed(id)
+            self.db.setFinalTime(id)
 
     def adjustTraceFile(self, todos):
         """ put the individuals into an arena, correct their coordinates, etc.

@@ -1,4 +1,5 @@
 import mysql.connector
+from datetime import datetime
 
 
 class DB():
@@ -137,6 +138,16 @@ class DB():
         """
         self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET postprocessed = 1 WHERE id = " + str(indiv) + ";")
 
+    def setFinalTime(self, indiv):
+        """ calculate the total time it took to process this individual
+        :param indiv: string, ID of an individual
+        :return: None
+        """
+        indiv_obj = self.getIndividual(indiv)
+        start_time = datetime.strptime(str(indiv_obj['created_time']), "%Y-%m-%d %H:%M:%S")
+        diff_time = datetime.now() - start_time
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET total_time = " + int(diff_time.total_seconds()) + " WHERE id = " + str(indiv) + ";")
+
     def markAsDead(self, indiv):
         """ marks the individual as unusable
         :param indiv: string, ID of an individual
@@ -165,6 +176,8 @@ class DB():
                          "vox_submitted TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "voxelyzed TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "postprocessed TINYINT(1) DEFAULT 0 NOT NULL, " +
+                         "created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                         "total_time INT, " +
                          "PRIMARY KEY (id) )")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          self.tablePrefix+"_traces " +
@@ -209,7 +222,7 @@ class DB():
         self.flush()
 
     def createIndividual(self, born, x, y):
-        self.cur.execute("INSERT INTO "+self.tablePrefix+"_individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0, 0);")
+        self.cur.execute("INSERT INTO "+self.tablePrefix+"_individuals VALUES (NULL, '" + str(born) + "', 0, 0, 0, 0, NULL, NULL);")
         individual_id = self.getLastInsertID()
         self.cur.execute(
             "INSERT INTO "+self.tablePrefix+"_firsttraces VALUES (NULL, " + individual_id + ", '" + str(born) + "', '" + str(x) + "', '" + str(
@@ -235,7 +248,6 @@ class DB():
     def getIndividual(self, id):
         self.flush()
         self.cur.execute("SELECT * FROM "+self.tablePrefix+"_individuals AS i WHERE i.id = '" + str(id) + "' ")
-        # return dict(zip(self.keys_individuals, self.cur.fetchone()))
         return self.cur.fetchone()
 
     def getTraces(self, id):
@@ -247,7 +259,6 @@ class DB():
     def getFirstTrace(self, id):
         self.flush()
         self.cur.execute("SELECT * FROM "+self.tablePrefix+"_firsttraces AS t WHERE t.indiv_id = '" + str(id) + "' ORDER BY t.id ASC LIMIT 1")
-        # return dict(zip(self.keys_traces, self.cur.fetchone()))
         return self.cur.fetchone()
 
     def getUnfinishedIndividuals(self):
