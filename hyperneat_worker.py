@@ -116,10 +116,17 @@ class HNWorker(threading.Thread):
             print(todos)
 
         for indiv in todos:
-            hn_params = " ".join(self.db.getParents(indiv))  # parent will be a list of size 0|1|2
+            parents = self.db.getParents(indiv)
+            hn_params = " ".join(parents)  # parent will be a list of size 0|1|2
             print("HN: creating individual (calling HN binary): " + str(indiv) )
             self.runHN(indiv, hn_params)
             print("HN: finished creating individual: " + str(indiv))
+
+            if (len(parents) == 2): # mutate if the indiv has 2 parents
+                print("HN: mutating individual: " + str(indiv) )
+                self.runHN(indiv, str(indiv))
+                print("HN: finished mutating individual: " + str(indiv))
+
             # TODO (later): error check the hyperneat output
 
         pass
