@@ -146,7 +146,11 @@ class DB():
         indiv_obj = self.getIndividual(indiv)
         start_time = datetime.strptime(str(indiv_obj['created_time']), "%Y-%m-%d %H:%M:%S")
         diff_time = datetime.now() - start_time
-        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET total_time = " + int(diff_time.total_seconds()) + " WHERE id = " + str(indiv) + ";")
+        self.cur.execute("UPDATE "+self.tablePrefix+"_individuals SET total_time = " + int(self.getTotalSeconds(diff_time)) + " WHERE id = " + str(indiv) + ";")
+
+    def getTotalSeconds(self, timedelta):
+        # hack because the total_seconds method only came in python 2.7 and DAS-4 runs 2.6
+        return int( (timedelta.microseconds + (timedelta.seconds + timedelta.days * 24 * 3600) * 10**6) / 10**6 )
 
     def markAsDead(self, indiv):
         """ marks the individual as unusable
