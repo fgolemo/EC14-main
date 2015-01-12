@@ -3,6 +3,7 @@ import shutil
 import threading, time, os
 from db import DB
 from preprocessing import Preprocessor
+import cPickle as pickle
 
 
 class PostprocessingWorker(threading.Thread):
@@ -12,6 +13,9 @@ class PostprocessingWorker(threading.Thread):
     pause_time = 2
     max_waiting_time = 60 * 60  # 60seconds * 60min = 1 hour in seconds
     base_path = ""
+    saves_path = "mating_progress/"
+    pickle_prefix = ""
+    get_save = False
     pop_path = "population/"
     traces_path = "traces_afterVox/"
     traces_backup_path = "traces_afterVox_backup/"
@@ -93,6 +97,26 @@ class PostprocessingWorker(threading.Thread):
         else:
             return 0
 
+    def gotSave(self):
+        self.pickle_prefix = self.base_path + self.saves_path
+        self.got_save = self.pickleExists("queue_partition")
+        return self.got_save
+
+    def pickleExists(self, name):
+        return os.path.isfile(self.pickle_prefix + name + ".pickle")
+
+    def unpickle(self, name):
+        return pickle.load(open(self.pickle_prefix + name + ".pickle", "rb"))
+
+    def pickle(self, var, name):
+        if (self.pickleExists(name)):
+            os.remove(self.pickle_prefix + name + ".pickle")
+        pickle.dump(var, open(self.pickle_prefix + name + ".pickle", "wb"))
+
+    def clearPickles(self):
+        shutil.rmtree(self.pickle_prefix)
+        os.makedirs(self.pickle_prefix)
+
     def run(self):
         """ main thread function
         :return: None
@@ -103,29 +127,41 @@ class PostprocessingWorker(threading.Thread):
         obs_path = os.path.normpath(self.base_path + self.traces_path)
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
-            self.dirCheck(obs_path)
-
-            if (len(self.queue) > 0):
-                self.queue = sorted(self.queue, cmp=self.compareQueue)
-                queue_partition = self.queue[:self.queue_length]
-                self.queue = self.queue[self.queue_length:]
-                if (self.debug):
-                    print("PP: found " + str(len(queue_partition)) + " todo(s)")
-                self.markAsVoxelyzed(queue_partition)
-                self.moveFilesToTmp(queue_partition)
-                self.adjustTraceFile(queue_partition)
-                self.traceToDatabase(queue_partition)
+            if (self.gotSave()):
+                queue_partition = self.unpickle("queue_partition")
                 babies = self.calculateOffspring(queue_partition)
                 if self.one_child:
                     self.makeBabies(babies)
                 self.moveFilesToFinal(queue_partition)
                 self.markAsPostprocessed(queue_partition)
                 waitCounter = 0
+                self.clearPickles()
             else:
-                if (self.debug):
-                    print("PP: found nothing")
-                waitCounter += time.time() - startTime
-                startTime = time.time()
+                self.dirCheck(obs_path)
+
+                if (len(self.queue) > 0):
+                    self.queue = sorted(self.queue, cmp=self.compareQueue)
+                    queue_partition = self.queue[:self.queue_length]
+                    self.queue = self.queue[self.queue_length:]
+                    if (self.debug):
+                        print("PP: found " + str(len(queue_partition)) + " todo(s)")
+                    self.markAsVoxelyzed(queue_partition)
+                    self.moveFilesToTmp(queue_partition)
+                    self.adjustTraceFile(queue_partition)
+                    self.traceToDatabase(queue_partition)
+                    self.pickle(queue_partition, "queue_partition")
+                    babies = self.calculateOffspring(queue_partition)
+                    if self.one_child:
+                        self.makeBabies(babies)
+                    self.moveFilesToFinal(queue_partition)
+                    self.markAsPostprocessed(queue_partition)
+                    waitCounter = 0
+                    self.clearPickles()
+                else:
+                    if (self.debug):
+                        print("PP: found nothing")
+                    waitCounter += time.time() - startTime
+                    startTime = time.time()
 
             jobsRunning = self.db.getJobsWaitingCount()
 
@@ -242,6 +278,10 @@ class PostprocessingWorker(threading.Thread):
         :return: None
         """
         babies = []
+        if (self.got_save):
+            babies = self.unpickle("babies")
+        else:
+            self.pickle(babies,"babies")
 
         for todo in todos:
             if (os.path.getsize(todo) == 0):
@@ -249,9 +289,19 @@ class PostprocessingWorker(threading.Thread):
             id = self.getIDfromTrace(todo)
             if (self.debug):
                 print("PP: looking for mates for individual {indiv}...".format(indiv=id))
-            mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
-            i = 0
-            positive_mates = []
+
+            if (self.got_save):
+                mates = self.unpickle("mates")
+                i = self.unpickle("i")
+                positive_mates = self.unpickle("positive_mates")
+            else:
+                mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
+                i = 0
+                positive_mates = []
+                self.pickle(mates, "mates")
+                self.pickle(i, "i")
+                self.pickle(positive_mates, "positive_mates")
+
             while (len(mates) != 0):
                 mate = mates[0]
                 parent2 = {}
@@ -282,6 +332,7 @@ class PostprocessingWorker(threading.Thread):
                     pass # don't create a mate with this partner.
                 else:
                     i += 1
+                    self.pickle(i, "i")
                     if (self.debug):
                         print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(
                             len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
@@ -290,7 +341,9 @@ class PostprocessingWorker(threading.Thread):
                                          self.indiv_max_age * self.indiv_infertile_span)
                     else:
                         positive_mates.append(mate["mate_indiv_id"])
+                        self.pickle(positive_mates, "positive_mates")
                         babies.append([mate, parent2, mate["ltime"]])
+                        self.pickle(babies, "babies")
 
                 newStart = mate["id"]
                 if self.one_child and self.debug:
@@ -300,6 +353,7 @@ class PostprocessingWorker(threading.Thread):
                     mates.pop(0)
                 else:
                     mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart, self.one_child)
+                self.pickle(mates, "mates")
 
             if (self.debug):
                 print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
