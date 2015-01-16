@@ -105,8 +105,11 @@ class PostprocessingWorker(threading.Thread):
     def pickleExists(self, name):
         return os.path.isfile(self.pickle_prefix + name + ".pickle")
 
-    def unpickle(self, name):
-        return pickle.load(open(self.pickle_prefix + name + ".pickle", "rb"))
+    def unpickle(self, name, defaultValue = None):
+        if self.pickleExists(name):
+            return pickle.load(open(self.pickle_prefix + name + ".pickle", "rb"))
+        else:
+            return defaultValue
 
     def pickle(self, var, name):
         if (self.pickleExists(name)):
@@ -279,7 +282,7 @@ class PostprocessingWorker(threading.Thread):
         """
         babies = []
         if (self.got_save):
-            babies = self.unpickle("babies")
+            babies = self.unpickle("babies", babies)
         else:
             self.pickle(babies,"babies")
 
@@ -292,8 +295,10 @@ class PostprocessingWorker(threading.Thread):
 
             if (self.got_save):
                 mates = self.unpickle("mates")
-                i = self.unpickle("i")
-                positive_mates = self.unpickle("positive_mates")
+                if mates == None:
+                    continue
+                i = self.unpickle("i", 0)
+                positive_mates = self.unpickle("positive_mates", [])
             else:
                 mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
                 i = 0
