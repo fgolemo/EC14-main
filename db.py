@@ -1,5 +1,6 @@
 import mysql.connector
 from datetime import datetime
+import random
 
 
 class DB():
@@ -308,9 +309,11 @@ class DB():
             "INSERT INTO "+self.tablePrefix+"_offspring VALUES (NULL, " + str(parent1) + ", " + str(parent2) + ", " + str(id) + ", 0);")
         return id
 
-    def makeBaby(self, parent1, parent2, ltime, single=False, infertileSpan=0.25):
-        x = (parent1["x"] + parent2["x"]) / 2
-        y = (parent1["y"] + parent2["y"]) / 2
+    def makeBaby(self, parent1, parent2, ltime, single=False, infertileSpan=0.25, arena_x=5, arena_y=5):
+        x = random.uniform(0,arena_x)
+        y = random.uniform(0,arena_y)
+        # x = (parent1["x"] + parent2["x"]) / 2
+        # y = (parent1["y"] + parent2["y"]) / 2
         id = self.createIndividual(ltime, x, y)
         insertString = "INSERT INTO "+self.tablePrefix+"_offspring VALUES (NULL, {parent1}, {parent2}, {child}, {ltime});"
         self.cur.execute(

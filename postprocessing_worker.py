@@ -343,7 +343,7 @@ class PostprocessingWorker(threading.Thread):
                             len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                     if not self.one_child:
                         self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child,
-                                         self.indiv_max_age * self.indiv_infertile_span)
+                                         self.indiv_max_age * self.indiv_infertile_span, self.arena_x, self.arena_y)
                     else:
                         positive_mates.append(mate["mate_indiv_id"])
                         self.pickle(positive_mates, "positive_mates")
@@ -367,7 +367,7 @@ class PostprocessingWorker(threading.Thread):
 
     def makeBabies(self, babies):
         for baby in babies:
-            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child, self.indiv_max_age * self.indiv_infertile_span)
+            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child, self.indiv_max_age * self.indiv_infertile_span, self.arena_x, self.arena_y)
 
     def getPathDuringPP(self, id):
         return self.base_path + self.traces_during_pp_path + str(id) + ".trace"
