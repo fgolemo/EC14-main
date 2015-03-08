@@ -107,14 +107,23 @@ class PostprocessingWorker(threading.Thread):
 
     def unpickle(self, name, defaultValue = None):
         if self.pickleExists(name):
-            return pickle.load(open(self.pickle_prefix + name + ".pickle", "rb"))
+            try:
+                val = pickle.load(open(self.pickle_prefix + name + ".pickle", "rb"))
+                return val
+            except (EOFError, ValueError, TypeError, MemoryError, pickle.UnpicklingError), e:
+                print ("PP: there was an error loading a pickle file: "+self.pickle_prefix + name + ".pickle")
+                print ("PP: hence I will delete it")
+                os.remove(self.pickle_prefix + name + ".pickle")
+                return defaultValue
         else:
             return defaultValue
 
-    def pickle(self, var, name):
-        if (self.pickleExists(name)):
-            os.remove(self.pickle_prefix + name + ".pickle")
-        pickle.dump(var, open(self.pickle_prefix + name + ".pickle", "wb"))
+    def pickle(self, pickles):
+        for var, name in pickles:
+            pickle.dump(var, open(self.pickle_prefix + name + ".pickle.tmp", "wb"))
+
+        for var, name in pickles:
+            os.rename(self.pickle_prefix + name + ".pickle.tmp", self.pickle_prefix + name + ".pickle")
 
     def clearPickles(self):
         shutil.rmtree(self.pickle_prefix)
@@ -152,7 +161,7 @@ class PostprocessingWorker(threading.Thread):
                     self.moveFilesToTmp(queue_partition)
                     self.adjustTraceFile(queue_partition)
                     self.traceToDatabase(queue_partition)
-                    self.pickle(queue_partition, "queue_partition")
+                    self.pickle([(queue_partition, "queue_partition")])
                     babies = self.calculateOffspring(queue_partition)
                     if self.one_child:
                         self.makeBabies(babies)
@@ -284,7 +293,7 @@ class PostprocessingWorker(threading.Thread):
         if (self.got_save):
             babies = self.unpickle("babies", babies)
         else:
-            self.pickle(babies,"babies")
+            self.pickle([(babies,"babies")])
 
         for todo in todos:
             if (os.path.getsize(todo) == 0):
@@ -303,9 +312,7 @@ class PostprocessingWorker(threading.Thread):
                 mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
                 i = 0
                 positive_mates = []
-                self.pickle(mates, "mates")
-                self.pickle(i, "i")
-                self.pickle(positive_mates, "positive_mates")
+                self.pickle([(mates, "mates"), (i, "i")], (positive_mates, "positive_mates"))
 
             while (len(mates) != 0):
                 mate = mates[0]
@@ -337,7 +344,7 @@ class PostprocessingWorker(threading.Thread):
                     pass # don't create a mate with this partner.
                 else:
                     i += 1
-                    self.pickle(i, "i")
+                    self.pickle([(i, "i")])
                     if (self.debug):
                         print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(
                             len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
@@ -346,9 +353,8 @@ class PostprocessingWorker(threading.Thread):
                                          self.indiv_max_age * self.indiv_infertile_span, self.arena_x, self.arena_y)
                     else:
                         positive_mates.append(mate["mate_indiv_id"])
-                        self.pickle(positive_mates, "positive_mates")
                         babies.append([mate, parent2, mate["ltime"]])
-                        self.pickle(babies, "babies")
+                        self.pickle([(positive_mates, "positive_mates"), (babies, "babies")])
 
                 newStart = mate["id"]
                 if self.one_child and self.debug:
@@ -358,7 +364,7 @@ class PostprocessingWorker(threading.Thread):
                     mates.pop(0)
                 else:
                     mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart, self.one_child)
-                self.pickle(mates, "mates")
+                self.pickle([(mates, "mates")])
 
             if (self.debug):
                 print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
