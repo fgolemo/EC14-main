@@ -312,7 +312,7 @@ class PostprocessingWorker(threading.Thread):
                 mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
                 i = 0
                 positive_mates = []
-                self.pickle([(mates, "mates"), (i, "i")], (positive_mates, "positive_mates"))
+                self.pickle([(mates, "mates"), (i, "i"), (positive_mates, "positive_mates")])
 
             while (len(mates) != 0):
                 mate = mates[0]
