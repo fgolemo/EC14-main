@@ -57,6 +57,7 @@ class HNWorker(threading.Thread):
         # individuals will be found here: self.base_path + self.pop_path + str(indiv)
         self.hn_path = os.path.expanduser(self.hn_path)
         self.pop_path = os.path.expanduser(self.base_path + self.pop_path)
+        self.pl_path = os.path.expanduser(self.base_path + self.pl_path)
 
         self.stopRequest = threading.Event()
 
@@ -194,7 +195,7 @@ class HNWorker(threading.Thread):
         if dna_length != count_length:
             print "DNA length count error!"
 
-        lifetime = ((count_soft * cost_soft) + (count_hard * cost_hard) + (count_active * cost_muscle)) * lifetime_weight
+        lifetime = ((count_soft * self.cost_soft) + (count_hard * self.cost_hard) + (count_active * self.cost_muscle)) * self.lifetime_weight
 
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)
         tree.write(self.pop_path + str(indiv) + self.suffix_vox)
