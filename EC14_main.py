@@ -63,7 +63,7 @@ class EC14controller():
         os.makedirs(self.base_path + "traces_afterVox_backup/")
         os.makedirs(self.base_path + "traces_duringPP/")
         os.makedirs(self.base_path + "traces_afterPP/")
-        os.makedirs(self.base_path + "population_beforePL/"
+        os.makedirs(self.base_path + "population_beforePL/")
         os.makedirs(self.base_path + "pool/")
         os.makedirs(self.base_path + "logs/")
 
