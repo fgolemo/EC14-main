@@ -395,9 +395,11 @@ class PostprocessingWorker(threading.Thread):
         """
         for indiv in todos:
             id = self.getIDfromTrace(indiv)
-            shutil.move(self.getPathDuringPP(id),
-                        self.base_path + self.traces_after_pp_path + str(id) + ".trace")
-            os.remove(indiv)
+            if os.path.isfile(self.getPathDuringPP(id)):
+                shutil.move(self.getPathDuringPP(id),
+                            self.base_path + self.traces_after_pp_path + str(id) + ".trace")
+            if os.path.isfile(indiv):
+                os.remove(indiv)
 
     def addFile(self, path):
         self.queue.append(path)
