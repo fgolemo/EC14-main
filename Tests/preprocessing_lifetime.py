@@ -41,7 +41,7 @@ cost_soft = 1 # Delete after testing
 cost_hard = 1 # Delete after testing
 lifetime_weight = 0.0025 # Delete after testing
 
-lifetime = ((count_soft * cost_soft) + (count_hard * cost_hard) + (count_active * cost_muscle)) * lifetime_weight
+lifetime = ((count_soft * cost_soft) + (count_active * cost_muscle)) * lifetime_weight
 # lifetime = 5 - lifetime_cost
 print lifetime # Delete after testing
 # text_file = open("Output.txt", "w")

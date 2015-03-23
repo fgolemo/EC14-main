@@ -124,6 +124,8 @@ class EC14controller():
         self.mailer_content = self.config.get('Mailer', 'content')
         self.mailer_subject = self.config.get('Mailer', 'subject')
 
+
+
     def isNewExperiment(self):
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
         print(self.base_path)

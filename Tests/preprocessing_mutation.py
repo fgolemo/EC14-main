@@ -45,21 +45,23 @@ for layer in layers:
             index_number = index_list[position_to_check]
             tissue = dna_list[index_number]
             print tissue # TESTING
-            if tissue == (3 or 4):
+            if tissue == '3' or tissue == '4':
                 dna_list[index_number] = "MUTANT!" # TODO: new value
                 found_mutation = True
-                print dna_list[index_number]
+                print dna_list[index_number] # TESTING
 
             else:
                 position_to_check += 1
-                print "Trying next index.."
+                print "Trying next index.." # TESTING
                 if position_to_check == len(index_list):
                     not_found = True
-                    print "I could not find a muscle voxel!"
+                    print "I could not find a muscle voxel!" # TESTING
                     break
         if not_found:
-            print "I could not find a muscle voxel!"
+            print "I could not find a muscle voxel!" # TESTING
             break
+
+    #TODO re-merge list into string and write to .xml file
 
 #
 #     try:

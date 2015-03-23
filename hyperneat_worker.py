@@ -30,24 +30,35 @@ class HNWorker(threading.Thread):
     db = None
 
     def readConfig(self, config_path):
+
         self.config.read(config_path)
+
         self.exp_name = self.config.get('Experiment', 'name')
         self.path_prefix = self.config.get('Experiment', 'path_prefix')
         self.debug = self.config.get('Experiment', 'debug')
+
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
+
         self.hn_path = self.config.get('Hyperneat', 'hn_path')
         self.hn_binary = self.config.get('Hyperneat', 'hn_binary')
         self.hn_params_file = self.config.get('Hyperneat', 'hn_params_file')
         self.suffix_genome = self.config.get('Hyperneat', 'suffix_genome')
         self.suffix_vox = self.config.get('Hyperneat', 'suffix_vox')
+
         self.pause_time = self.config.getint('Workers', 'pause_time')
         self.queue_length = self.config.getint('Workers', 'queue_len')
         self.max_waiting_time = self.config.getint('Workers', 'max_waiting_time')
+
         self.pl_path = self.config.get('Lifetimes', 'pl_path')
         self.cost_muscle = self.config.getfloat('Lifetimes', 'cost_muscle')
         self.cost_soft = self.config.getfloat('Lifetimes', 'cost_soft')
         self.cost_hard = self.config.getfloat('Lifetimes', 'cost_hard')
+        self.energy_unit = self.config.getfloat('Lifetimes', 'energy_unit')
         self.lifetime_weight = self.config.getfloat('Lifetimes', 'lifetime_weight')
+        self.starting_energy = self.config.getfloat('Lifetimes', 'starting_energy')
+
+        self.mutation_chance = self.config.getfloat('Mutation', 'mutation_chance')
+
 
     def __init__(self, dbParams, config_path):
         threading.Thread.__init__(self)
@@ -195,7 +206,7 @@ class HNWorker(threading.Thread):
         if dna_length != count_length:
             print "DNA length count error!"
 
-        lifetime = ((count_soft * self.cost_soft) + (count_hard * self.cost_hard) + (count_active * self.cost_muscle)) * self.lifetime_weight
+        lifetime = self.starting_energy - self.energy_unit * ((count_soft * self.cost_soft) + (count_active * self.cost_muscle))
 
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)
         tree.write(self.pop_path + str(indiv) + self.suffix_vox)
