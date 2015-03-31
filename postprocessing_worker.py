@@ -302,8 +302,11 @@ class PostprocessingWorker(threading.Thread):
         pass
 
     def filterPopulationCap(self, id, mates):
-        mate = random.choice(mates)
-        return [mate]
+        if len(mates) > 0:
+            mate = random.choice(mates)
+            return [mate]
+        else:
+            return []
 
     def calculateOffspring2(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
