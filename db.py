@@ -378,7 +378,6 @@ class DB():
         querySting = "SELECT * FROM " + self.tablePrefix + "_mates WHERE indiv_id={indiv};"
         self.cur.execute(querySting.format(indiv=indiv))
         result = self.cur.fetchall()
-        print result
         return result
 
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
