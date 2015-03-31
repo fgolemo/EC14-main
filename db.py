@@ -259,7 +259,7 @@ class DB():
                          "t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, " +
                          "t2.x as mate_x, t2.y as mate_y, t2.z as mate_z, 1 FROM " + self.tablePrefix + "_traces AS t2 " +
                          "WHERE t2.indiv_id!=NEW.indiv_id AND NEW.ltime = t2.ltime " +
-                         "AND SQRT( POW(NEW.x - t2.x,2) + POW(NEW.y - t2.y,2) ) <= " + spaceTolerance + " " +
+                         "AND SQRT( POW(NEW.x - t2.x,2) + POW(NEW.y - t2.y,2) ) <= " + str(spaceTolerance) + " " +
                          "GROUP BY mate_indiv_id; " +
                          "END;")
         self.cur.execute("SET sql_notes = 1")
