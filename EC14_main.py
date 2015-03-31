@@ -42,6 +42,7 @@ class EC14controller():
     mailer_subject = "Experiment {exp_name} done"
     mailer_content = "Experiment {exp_name} successfully completed. Total population: {pop_total}"
     walltime_name = "walltime"
+    spaceTolerance = 0.01
 
     random_granularity = 10000.0
 
@@ -118,6 +119,8 @@ class EC14controller():
         self.pop_random_start = self.config.getfloat('Population', 'random_start')
         self.pop_random_end = self.config.getfloat('Population', 'random_end')
 
+        self.spaceTolerance = self.config.getfloat('Mating', 'spaceTolerance')
+
         self.pause_time = self.config.getint('Workers', 'pause_time')
 
         self.mailer = self.config.getboolean('Mailer', 'mailer')
@@ -139,7 +142,7 @@ class EC14controller():
         if (self.isNewExperiment()):
             self.installFiles()
             self.db.dropTables()
-            self.db.createTables()
+            self.db.createTables(self.spaceTolerance)
             self.createPopulaton()
 
     def launchWorkers(self):

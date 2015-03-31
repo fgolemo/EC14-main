@@ -1,4 +1,5 @@
 import ConfigParser
+import random
 import shutil
 import threading, time, os
 from db import DB
@@ -38,9 +39,12 @@ class PostprocessingWorker(threading.Thread):
     area_birthcontrol = False
     area_birthcontrol_radius = 0.05
     area_birthcontrol_cutoff = 25
+    population_cap = False
     pp = Preprocessor()
     indiv_max_age = 0
+    indiv_infertile = False
     indiv_infertile_span = 0.25
+    random_birth_place = False
     queue_length = 1
     timestep = 0.002865
 
@@ -66,6 +70,7 @@ class PostprocessingWorker(threading.Thread):
 
         self.timeTolerance = self.config.getfloat('Mating', 'timeTolerance')
         self.spaceTolerance = self.config.getfloat('Mating', 'spaceTolerance')
+        self.indiv_infertile = self.config.getboolean('Mating', 'indiv_infertile')
         self.indiv_infertile_span = self.config.getfloat('Mating', 'indiv_infertile_span')
         self.one_child = self.config.getboolean('Mating', 'onlyOneChildPerParents')
         self.infertile_birth = self.config.getboolean('Mating', 'infertileAfterBirth')
@@ -73,6 +78,8 @@ class PostprocessingWorker(threading.Thread):
         self.area_birthcontrol = self.config.getboolean('Mating', 'areaBirthControl')
         self.area_birthcontrol_radius = self.config.getfloat('Mating', 'areaBirthControlRadius')
         self.area_birthcontrol_cutoff = self.config.getfloat('Mating', 'areaBirthControlCutoff')
+        self.population_cap = self.config.getboolean('Mating', 'populationCap')
+        self.random_birth_place = self.config.getboolean('Mating', 'randomBirthPlace')
 
         self.arena_x = self.config.getfloat('Arena', 'x')
         self.arena_y = self.config.getfloat('Arena', 'y')
@@ -139,41 +146,42 @@ class PostprocessingWorker(threading.Thread):
         obs_path = os.path.normpath(self.base_path + self.traces_path)
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
-            if (self.gotSave()):
-                queue_partition = self.unpickle("queue_partition")
-                babies = self.calculateOffspring(queue_partition)
-                if self.one_child:
-                    self.makeBabies(babies)
+            # if (self.gotSave()):
+            #     queue_partition = self.unpickle("queue_partition")
+            #     babies = self.calculateOffspring(queue_partition)
+            #     if self.one_child:
+            #         self.makeBabies(babies)
+            #     self.moveFilesToFinal(queue_partition)
+            #     self.markAsPostprocessed(queue_partition)
+            #     waitCounter = 0
+            #     self.clearPickles()
+            # else:
+            self.dirCheck(obs_path)
+
+            if (len(self.queue) > 0):
+                self.queue = sorted(self.queue, cmp=self.compareQueue)
+                queue_partition = self.queue[:self.queue_length]
+                self.queue = self.queue[self.queue_length:]
+                if (self.debug):
+                    print("PP: found " + str(len(queue_partition)) + " todo(s)")
+                self.markAsVoxelyzed(queue_partition)
+                self.moveFilesToTmp(queue_partition)
+                self.adjustTraceFile(queue_partition)
+                self.traceToDatabase(queue_partition)
+                # self.pickle([(queue_partition, "queue_partition")])
+                babies = self.calculateOffspring2(queue_partition)
+                self.makeBabies(babies)
+                # if self.one_child:
+                #     self.makeBabies(babies)
                 self.moveFilesToFinal(queue_partition)
                 self.markAsPostprocessed(queue_partition)
                 waitCounter = 0
-                self.clearPickles()
+                # self.clearPickles()
             else:
-                self.dirCheck(obs_path)
-
-                if (len(self.queue) > 0):
-                    self.queue = sorted(self.queue, cmp=self.compareQueue)
-                    queue_partition = self.queue[:self.queue_length]
-                    self.queue = self.queue[self.queue_length:]
-                    if (self.debug):
-                        print("PP: found " + str(len(queue_partition)) + " todo(s)")
-                    self.markAsVoxelyzed(queue_partition)
-                    self.moveFilesToTmp(queue_partition)
-                    self.adjustTraceFile(queue_partition)
-                    self.traceToDatabase(queue_partition)
-                    self.pickle([(queue_partition, "queue_partition")])
-                    babies = self.calculateOffspring(queue_partition)
-                    if self.one_child:
-                        self.makeBabies(babies)
-                    self.moveFilesToFinal(queue_partition)
-                    self.markAsPostprocessed(queue_partition)
-                    waitCounter = 0
-                    self.clearPickles()
-                else:
-                    if (self.debug):
-                        print("PP: found nothing")
-                    waitCounter += time.time() - startTime
-                    startTime = time.time()
+                if (self.debug):
+                    print("PP: found nothing")
+                waitCounter += time.time() - startTime
+                startTime = time.time()
 
             jobsRunning = self.db.getJobsWaitingCount()
 
@@ -284,6 +292,63 @@ class PostprocessingWorker(threading.Thread):
         y = (parent1["y"] + parent2["y"]) / 2
         return [x, y]
 
+    def filterGlobalInfertility(self, id, mates):
+        pass
+
+    def filterIncestControl(self, id, mates):
+        pass
+
+    def filterAreaBirthControl(self, id, mates):
+        pass
+
+    def filterPopulationCap(self, id, mates):
+        mate = random.choice(mates)
+        return [mate]
+
+    def calculateOffspring2(self, todos):
+        """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
+        :param todos: list of strings with the individual IDs
+        :return: list of babies to make
+        """
+
+        babies = []
+
+        for todo in todos:
+            if os.path.getsize(todo) == 0:
+                continue
+            id = self.getIDfromTrace(todo)
+            if self.debug:
+                print("PP: looking for mates for individual {indiv}...".format(indiv=id))
+            mates = self.db.getMates(id)
+
+            # population cap is exclusive - if it is on, no other control works
+            if self.population_cap:
+                mates = self.filterPopulationCap(id, mates)
+            else:
+                if self.indiv_infertile:
+                    mates = self.filterGlobalInfertility(id, mates)
+                if self.one_child:
+                    mates = self.filterIncestControl(id, mates)
+                if self.area_birthcontrol:
+                    mates = self.filterAreaBirthControl(id, mates)
+
+            babies += self.matesToBabies(id, mates)
+        return babies
+
+    def matesToBabies(self, id, mates):
+        babies = []
+        for mate in mates:
+            parent2 = {}
+            parent2["id"] = mate["mate_id"]
+            parent2["indiv_id"] = mate["mate_indiv_id"]
+            parent2["ltime"] = mate["mate_ltime"]
+            parent2["x"] = mate["mate_x"]
+            parent2["y"] = mate["mate_y"]
+            parent2["z"] = mate["mate_z"]
+            babies.append([mate, parent2, mate["ltime"]])
+        return babies
+
+
     def calculateOffspring(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
         :param todos: list of strings with the individual IDs
@@ -350,7 +415,8 @@ class PostprocessingWorker(threading.Thread):
                             len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
                     if not self.one_child:
                         self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child,
-                                         self.indiv_max_age * self.indiv_infertile_span, self.arena_x, self.arena_y)
+                                         self.indiv_max_age * self.indiv_infertile_span,
+                                         self.arena_x, self.arena_y, self.random_birth_place)
                     else:
                         positive_mates.append(mate["mate_indiv_id"])
                         babies.append([mate, parent2, mate["ltime"]])
@@ -373,7 +439,9 @@ class PostprocessingWorker(threading.Thread):
 
     def makeBabies(self, babies):
         for baby in babies:
-            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child, self.indiv_max_age * self.indiv_infertile_span, self.arena_x, self.arena_y)
+            self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child,
+                             self.indiv_max_age * self.indiv_infertile_span,
+                             self.arena_x, self.arena_y, self.random_birth_place)
 
     def getPathDuringPP(self, id):
         return self.base_path + self.traces_during_pp_path + str(id) + ".trace"

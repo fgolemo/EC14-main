@@ -175,7 +175,7 @@ class DB():
         self.cur.execute("SET sql_notes = 1")
         self.flush()
 
-    def createTables(self):
+    def createTables(self, spaceTolerance):
         self.cur.execute("SET sql_notes = 0")
         self.cur.execute("CREATE TABLE IF NOT EXISTS " +
                          self.tablePrefix + "_individuals " +
@@ -259,7 +259,7 @@ class DB():
                          "t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, " +
                          "t2.x as mate_x, t2.y as mate_y, t2.z as mate_z, 1 FROM " + self.tablePrefix + "_traces AS t2 " +
                          "WHERE t2.indiv_id!=NEW.indiv_id AND NEW.ltime = t2.ltime " +
-                         "AND SQRT( POW(NEW.x - t2.x,2) + POW(NEW.y - t2.y,2) ) <= 0.01 " +
+                         "AND SQRT( POW(NEW.x - t2.x,2) + POW(NEW.y - t2.y,2) ) <= " + spaceTolerance + " " +
                          "GROUP BY mate_indiv_id; " +
                          "END;")
         self.cur.execute("SET sql_notes = 1")
@@ -353,11 +353,13 @@ class DB():
                 parent2) + ", " + str(id) + ", 0);")
         return id
 
-    def makeBaby(self, parent1, parent2, ltime, single=False, infertileSpan=0.25, arena_x=5, arena_y=5):
-        x = random.uniform(0, arena_x)
-        y = random.uniform(0, arena_y)
-        # x = (parent1["x"] + parent2["x"]) / 2
-        # y = (parent1["y"] + parent2["y"]) / 2
+    def makeBaby(self, parent1, parent2, ltime, single=False, infertileSpan=0.25, arena_x=5, arena_y=5, randomPlace=False):
+        if randomPlace:
+            x = random.uniform(0, arena_x)
+            y = random.uniform(0, arena_y)
+        else:
+            x = (parent1["x"] + parent2["x"]) / 2
+            y = (parent1["y"] + parent2["y"]) / 2
         id = self.createIndividual(ltime, x, y)
         insertString = "INSERT INTO " + self.tablePrefix + "_offspring VALUES (NULL, {parent1}, {parent2}, {child}, {ltime});"
         self.cur.execute(
@@ -372,13 +374,20 @@ class DB():
         updateString = "UPDATE " + self.tablePrefix + "_traces SET fertile = 0 WHERE indiv_id = {indiv} AND ltime >= {start} AND ltime < {end}"
         self.cur.execute(updateString.format(indiv=parent, start=start, end=start + timespan))
 
+    def getMates(self, indiv):
+        querySting = "SELECT * FROM " + self.tablePrefix + "_mates WHERE indiv_id={indiv};"
+        self.cur.execute(querySting.format(indiv=indiv))
+        result = self.cur.fetchall()
+        print result
+        return result
+
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
         # self.currentQueries += 1
         # if self.currentQueries > self.maxQueries:
         # print ("DB: reached max numbers of long queries, reconnecting...")
         # self.connect()
         # print ("DB: ...reconnect done.")
-        #     self.currentQueries = 1
+        # self.currentQueries = 1
 
         query = "SELECT t1.*, t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, t2.x as mate_x, t2.y as mate_y, t2.z as mate_z " + \
                 "FROM " + self.tablePrefix + "_traces AS t1 INNER JOIN " + self.tablePrefix + "_traces as t2 " + \
