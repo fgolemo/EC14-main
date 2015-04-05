@@ -308,6 +308,12 @@ class DB():
             id) + "' ORDER BY t.id ASC LIMIT 1")
         return self.cur.fetchone()
 
+    def getLastTrace(self, id):
+        self.flush()
+        self.cur.execute("SELECT * FROM " + self.tablePrefix + "_traces AS t WHERE t.indiv_id = '" + str(
+            id) + "' ORDER BY t.id DESC LIMIT 1")
+        return self.cur.fetchone()
+
     def getUnfinishedIndividuals(self):
         self.flush()
         self.cur.execute("SELECT COUNT(id) FROM " + self.tablePrefix + "_individuals WHERE postprocessed = 0")

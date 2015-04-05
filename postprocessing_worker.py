@@ -306,7 +306,21 @@ class PostprocessingWorker(threading.Thread):
             mate = random.choice(mates)
             return [mate]
         else:
-            return []
+            lastTrace = self.db.getLastTrace(id)
+            mate = {}
+            mate["id"] = 0
+            mate["indiv_id"] = id
+            mate["ltime"] = lastTrace["ltime"]
+            mate["x"] = lastTrace["x"]
+            mate["y"] = lastTrace["y"]
+            mate["z"] = lastTrace["z"]
+            mate["mate_id"] = 0
+            mate["mate_indiv_id"] = id
+            mate["mate_ltime"] = lastTrace["ltime"]
+            mate["mate_x"] = lastTrace["x"]
+            mate["mate_y"] = lastTrace["y"]
+            mate["mate_z"] = lastTrace["z"]
+            return [mate]
 
     def calculateOffspring2(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
