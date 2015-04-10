@@ -51,6 +51,7 @@ class ResubEnabler():
         self.handleParams()
         self.initialize()
         self.enableResubmissions()
+        print "done, now run the experiment again"
 
 
 if __name__ == "__main__":
