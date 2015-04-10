@@ -52,9 +52,7 @@ class HNWorker(threading.Thread):
         self.pl_path = self.config.get('Lifetimes', 'pl_path')
         self.cost_muscle = self.config.getfloat('Lifetimes', 'cost_muscle')
         self.cost_soft = self.config.getfloat('Lifetimes', 'cost_soft')
-        self.cost_hard = self.config.getfloat('Lifetimes', 'cost_hard')
         self.energy_unit = self.config.getfloat('Lifetimes', 'energy_unit')
-        self.lifetime_weight = self.config.getfloat('Lifetimes', 'lifetime_weight')
         self.starting_energy = self.config.getfloat('Lifetimes', 'starting_energy')
 
         self.mutation_chance = self.config.getfloat('Mutation', 'mutation_chance')
