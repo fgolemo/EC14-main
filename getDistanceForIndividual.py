@@ -62,7 +62,8 @@ class DistanceCalc(Skeletor):
             if firstRun:
                 firstLine = lineSplit
             else:
-                pass
+                if len(lineSplit) > 0:
+                    lastLine = lineSplit
 
         lastLine = lineSplit
         x_diff = float(firstLine[2]) - float(lastLine[2])
