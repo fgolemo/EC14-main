@@ -39,6 +39,8 @@ class DistanceCalc(Skeletor):
         dist = 0
         for line in inputFile:
             lineSplit = line.split("\t")
+            if len(lineSplit) == 0:
+                continue
             if not firstRun:
                 x_diff = x - float(lineSplit[2])
                 y_diff = y - float(lineSplit[3])
@@ -59,11 +61,14 @@ class DistanceCalc(Skeletor):
         lineSplit = []
         for line in inputFile:
             lineSplit = line.split("\t")
+            if len(lineSplit) == 0:
+                continue
+
             if firstRun:
                 firstLine = lineSplit
             else:
-                if len(lineSplit) > 0:
-                    lastLine = lineSplit
+                pass
+            firstRun = False
 
         lastLine = lineSplit
         x_diff = float(firstLine[2]) - float(lastLine[2])
@@ -78,5 +83,5 @@ if __name__ == "__main__":
     dc = DistanceCalc()
     dc.start()
     distances = dc.calcDistance()
-    print " ".join(distances)
+    print " ".join([str(dist) for dist in distances])
 
