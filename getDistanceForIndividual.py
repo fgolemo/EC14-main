@@ -11,7 +11,7 @@ class DistanceCalc(Skeletor):
         self.traces_after_pp_path = "traces_afterPP/"
 
     def handleParams(self):
-        if len(sys.argv) != 2:
+        if len(sys.argv) != 3:
             print(
                 "I take 2 argument: the configuration file for the experiment and an individual number/id, separated with a space")
             quit()
@@ -21,11 +21,11 @@ class DistanceCalc(Skeletor):
         self.individual = str(int(sys.argv[2]))
 
     def readConfig(self, filename):
-        Skeletor.readConfig(self)
+        Skeletor.readConfig(self, self.configPath)
         self.traces_after_pp_path = self.config.get('Postprocessing', 'traces_after_pp_path')
 
     def calcDistance(self):
-        filename = self.base_path + self.traces_during_pp_path + self.individual + ".trace"
+        filename = self.base_path + self.traces_after_pp_path + self.individual + ".trace"
         with open(filename, 'r') as inputFile:
             distEuclidean = self.distanceEuclidian(inputFile)
 

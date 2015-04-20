@@ -12,6 +12,7 @@ class Skeletor():
     configPath = ""
     exp_name = ""
     dbString = ""
+    path_prefix = ""
 
     def __init__(self):
         self.config = ConfigParser.RawConfigParser()
@@ -25,8 +26,10 @@ class Skeletor():
 
     def readConfig(self, filename):
         self.config.read(filename)
+        self.path_prefix = self.config.get('Experiment', 'path_prefix')
         self.dbString = self.config.get('DB', 'db_string')
         self.exp_name = self.config.get('Experiment', 'name')
+        self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
 
     def initialize(self):
         self.readConfig(self.configPath)
