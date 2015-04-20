@@ -27,56 +27,58 @@ class DistanceCalc(Skeletor):
 
     def calcDistance(self):
         filename = self.base_path + self.traces_after_pp_path + self.individual + ".trace"
+
+        distEuclideanStep = self.distanceStep(filename, "euclidean")
+        distManhattanStep = self.distanceStep(filename, "manhattan")
+        distEuclideanTotal = self.distanceTotal(filename, "euclidean")
+        distManhattanTotal = self.distanceTotal(filename, "manhattan")
+        return [distEuclideanStep, distManhattanStep, distEuclideanTotal, distManhattanTotal]
+
+    def distanceStep(self, filename, type):
         with open(filename, 'r') as inputFile:
-            distEuclideanStep = self.distanceStep(inputFile, "euclidean")
-            distManhattenStep = self.distanceStep(inputFile, "manhatten")
-            distEuclideanTotal = self.distanceTotal(inputFile, "euclidean")
-            distManhattenTotal = self.distanceTotal(inputFile, "manhatten")
-        return [distEuclideanStep, distManhattenStep, distEuclideanTotal, distManhattenTotal]
+            firstRun = True
+            dist = 0
+            for line in inputFile:
+                lineSplit = line.split("\t")
+                if len(lineSplit) == 0:
+                    continue
+                if not firstRun:
+                    x_diff = x - float(lineSplit[2])
+                    y_diff = y - float(lineSplit[3])
+                    if type == "euclidean":
+                        dist += math.sqrt((x_diff**2) + (y_diff**2))
+                    if type == "manhattan":
+                        dist += math.fabs(x_diff) + math.fabs(y_diff)
 
-    def distanceStep(self, inputFile, type):
-        firstRun = True
-        dist = 0
-        for line in inputFile:
-            lineSplit = line.split("\t")
-            if len(lineSplit) == 0:
-                continue
-            if not firstRun:
-                x_diff = x - float(lineSplit[2])
-                y_diff = y - float(lineSplit[3])
-                if type == "euclidean":
-                    dist += math.sqrt((x_diff**2) + (y_diff**2))
-                if type == "manhatten":
-                    dist += math.fabs(x_diff) + math.fabs(y_diff)
+                x = float(lineSplit[2])
+                y = float(lineSplit[3])
+                firstRun = False
+            return dist
 
-            x = float(lineSplit[2])
-            y = float(lineSplit[3])
-            firstRun = False
-        return dist
+    def distanceTotal(self, filename, type):
+        with open(filename, 'r') as inputFile:
+            firstRun = True
+            firstLine = []
+            lastLine = []
+            lineSplit = []
+            for line in inputFile:
+                lineSplit = line.split("\t")
+                if len(lineSplit) == 0:
+                    continue
 
-    def distanceTotal(self, inputFile, type):
-        firstRun = True
-        firstLine = []
-        lastLine = []
-        lineSplit = []
-        for line in inputFile:
-            lineSplit = line.split("\t")
-            if len(lineSplit) == 0:
-                continue
+                if firstRun:
+                    firstLine = lineSplit
+                else:
+                    pass
+                firstRun = False
 
-            if firstRun:
-                firstLine = lineSplit
-            else:
-                pass
-            firstRun = False
-
-        lastLine = lineSplit
-        x_diff = float(firstLine[2]) - float(lastLine[2])
-        y_diff = float(firstLine[3]) - float(lastLine[3])
-        if type == "euclidean":
-            return  math.sqrt((x_diff**2) + (y_diff**2))
-        if type == "manhatten":
-            return math.fabs(x_diff) + math.fabs(y_diff)
+            lastLine = lineSplit
+            x_diff = float(firstLine[2]) - float(lastLine[2])
+            y_diff = float(firstLine[3]) - float(lastLine[3])
+            if type == "euclidean":
+                return  math.sqrt((x_diff**2) + (y_diff**2))
+            if type == "manhattan":
+                return math.fabs(x_diff) + math.fabs(y_diff)
 
 
 if __name__ == "__main__":
