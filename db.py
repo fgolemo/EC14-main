@@ -134,6 +134,13 @@ class DB():
         self.cur.execute(
             "UPDATE " + self.tablePrefix + "_individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
 
+    def unmarkAsVoxSubmitted(self):
+        """ re-enable all individuals for resubmission to the cluster by removing the submitted flag
+        :return: None
+        """
+        self.cur.execute(
+            "UPDATE " + self.tablePrefix + "_individuals SET vox_submitted = 0 WHERE postprocessed = 0;")
+
     def markAsPostprocessed(self, indiv):
         """ marks the individual as successfully mates, trace file moved and corrected
         :param indiv: string, ID of an individual

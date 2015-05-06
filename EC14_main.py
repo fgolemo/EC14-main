@@ -13,7 +13,6 @@ import voxelyze_worker as vox
 import postprocessing_worker as pp
 
 
-
 class EC14controller():
     base_path = ""
     db = None
@@ -128,7 +127,6 @@ class EC14controller():
         self.mailer_subject = self.config.get('Mailer', 'subject')
 
 
-
     def isNewExperiment(self):
         self.base_path = os.path.expanduser(self.path_prefix + self.exp_name) + "/"
         print(self.base_path)
@@ -139,7 +137,7 @@ class EC14controller():
     def initialize(self):
         self.readConfig(self.configPath)
         self.getDB()
-        if (self.isNewExperiment()):
+        if self.isNewExperiment():
             self.installFiles()
             self.db.dropTables()
             self.db.createTables(self.spaceTolerance)
@@ -194,17 +192,17 @@ class EC14controller():
         logPath = self.base_path + "logs/" + logPrefix
         cwd = os.path.dirname(os.path.realpath(__file__))
 
-        cmd = "qsub -o {logpath}.output.log -e {logpath}.error.log -l {walltime_name}={walltime} -v "+\
+        cmd = "qsub -o {logpath}.output.log -e {logpath}.error.log -l {walltime_name}={walltime} -v " + \
               "config={config},run={run},cwd={cwd} {cwd}/scripts/main-resub.sh"
 
         qsub = subprocess.Popen(cmd.format(logpath=logPath,
-                                                  walltime=self.wall_time,
-                                                  walltime_name=self.walltime_name,
-                                                  config=self.configPath,
-                                                  run=self.run + 1,
-                                                  cwd=cwd),
-                                       shell=True,
-                                       stdout=subprocess.PIPE).communicate()[0]
+                                           walltime=self.wall_time,
+                                           walltime_name=self.walltime_name,
+                                           config=self.configPath,
+                                           run=self.run + 1,
+                                           cwd=cwd),
+                                shell=True,
+                                stdout=subprocess.PIPE).communicate()[0]
         print("MAIN: resubmitted myself as:" + str(qsub) )
 
     def keyboard_exit(self, signal, frame):
@@ -219,9 +217,9 @@ class EC14controller():
 
     def sendFinishedMail(self):
         pop_total = self.db.getPopulationTotal()
-        subject = self.mailer_subject.format(exp_name = self.exp_name, pop_total = pop_total)
-        content = self.mailer_content.format(exp_name = self.exp_name, pop_total = pop_total)
-        mailer_cmd = "echo '{content}' | mail -s '{subject}' $USER".format(content = content, subject = subject)
+        subject = self.mailer_subject.format(exp_name=self.exp_name, pop_total=pop_total)
+        content = self.mailer_content.format(exp_name=self.exp_name, pop_total=pop_total)
+        mailer_cmd = "echo '{content}' | mail -s '{subject}' $USER".format(content=content, subject=subject)
         subprocess.Popen(mailer_cmd, shell=True)
 
 
