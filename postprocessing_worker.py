@@ -47,6 +47,7 @@ class PostprocessingWorker(threading.Thread):
     random_birth_place = False
     queue_length = 1
     timestep = 0.002865
+    pick_from_pool = False
 
     def readConfig(self, config_path):
         self.config.read(config_path)
@@ -80,6 +81,7 @@ class PostprocessingWorker(threading.Thread):
         self.area_birthcontrol_cutoff = self.config.getfloat('Mating', 'areaBirthControlCutoff')
         self.population_cap = self.config.getboolean('Mating', 'populationCap')
         self.random_birth_place = self.config.getboolean('Mating', 'randomBirthPlace')
+        self.pick_from_pool = self.config.getboolean('Mating', 'pickFromPool')
 
         self.arena_x = self.config.getfloat('Arena', 'x')
         self.arena_y = self.config.getfloat('Arena', 'y')
@@ -304,23 +306,25 @@ class PostprocessingWorker(threading.Thread):
     def filterPopulationCap(self, id, mates):
         if len(mates) > 0:
             mate = random.choice(mates)
-            return [mate]
         else:
-            lastTrace = self.db.getLastTrace(id)
-            mate = {}
-            mate["id"] = 0
-            mate["indiv_id"] = id
-            mate["ltime"] = lastTrace["ltime"]
-            mate["x"] = lastTrace["x"]
-            mate["y"] = lastTrace["y"]
-            mate["z"] = lastTrace["z"]
-            mate["mate_id"] = 0
-            mate["mate_indiv_id"] = id
-            mate["mate_ltime"] = lastTrace["ltime"]
-            mate["mate_x"] = lastTrace["x"]
-            mate["mate_y"] = lastTrace["y"]
-            mate["mate_z"] = lastTrace["z"]
-            return [mate]
+            if not self.pick_from_pool: # then we mate the individual with itself
+                lastTrace = self.db.getLastTrace(id)
+                mate = {}
+                mate["id"] = 0
+                mate["indiv_id"] = id
+                mate["ltime"] = lastTrace["ltime"]
+                mate["x"] = lastTrace["x"]
+                mate["y"] = lastTrace["y"]
+                mate["z"] = lastTrace["z"]
+                mate["mate_id"] = 0
+                mate["mate_indiv_id"] = id
+                mate["mate_ltime"] = lastTrace["ltime"]
+                mate["mate_x"] = lastTrace["x"]
+                mate["mate_y"] = lastTrace["y"]
+                mate["mate_z"] = lastTrace["z"]
+            else:
+                return [None]
+        return [mate]
 
     def calculateOffspring2(self, todos):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
@@ -348,8 +352,11 @@ class PostprocessingWorker(threading.Thread):
                     mates = self.filterIncestControl(id, mates)
                 if self.area_birthcontrol:
                     mates = self.filterAreaBirthControl(id, mates)
-
-            babies += self.matesToBabies(id, mates)
+            if mates != [None]:
+                babies += self.matesToBabies(id, mates)
+            else:
+                randomMate = self.db.getRandomMate()
+                babies += self.matesToBabies(randomMate["id"], [randomMate])
         return babies
 
     def matesToBabies(self, id, mates):

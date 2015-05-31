@@ -393,6 +393,14 @@ class DB():
         result = self.cur.fetchall()
         return result
 
+    def getRandomMate(self):
+        querySting = "SELECT * FROM " + self.tablePrefix + "_mates WHERE id >= (SELECT FLOOR( MAX(id) * RAND()) FROM " + self.tablePrefix + "_mates ) ORDER BY id LIMIT 1;"
+        self.cur.execute(querySting)
+        result = self.cur.fetchall()
+        result = result[0]
+        print(result)
+        return result
+
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
         # self.currentQueries += 1
         # if self.currentQueries > self.maxQueries:
