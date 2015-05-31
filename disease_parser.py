@@ -14,6 +14,7 @@ class plagueVirus():
             string += str(each)
         return string
 
+
     def atrophyMuscles(self):
         """Mutates muscle tissue voxels according to some probability in each layer
         """
@@ -24,7 +25,15 @@ class plagueVirus():
                 tree = ET.ElementTree(file="./population/" + dna_file)
                 root = tree.getroot()
                 layers = root.find('VXC').find('Structure').find('Data').findall('Layer')
-                probability = 1
+
+                """Calculates probability based on amount of fat tissue
+                """
+                dna = ""
+                for layer in layers:
+                    dna += str(layer.text).strip()
+                count_soft = dna.count('1')
+                probability = (count_soft / 1000) * 0.5 # or 0.0005 * count_soft
+
 
                 dna_list = ""
                 for layer in layers:
