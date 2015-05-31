@@ -352,7 +352,7 @@ class PostprocessingWorker(threading.Thread):
                     mates = self.filterIncestControl(id, mates)
                 if self.area_birthcontrol:
                     mates = self.filterAreaBirthControl(id, mates)
-            if mates != [None]:
+            if mates != [None]: # this happens only if self.pick_from_pool is True and if no mate was found
                 babies += self.matesToBabies(id, mates)
             else:
                 randomMate = self.db.getRandomMate()
