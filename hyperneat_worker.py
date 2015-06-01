@@ -1,8 +1,10 @@
+from __future__ import division
 import ConfigParser
 import shutil
 from subprocess import CalledProcessError
 import threading, time, subprocess, os
 from db import DB
+import random
 import xml.etree.cElementTree as ET
 # except ImportError:
 #     import xml.etree.ElementTree as ET
@@ -208,6 +210,42 @@ class HNWorker(threading.Thread):
 
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)
         tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+
+    def atrophyMuscles(self,indiv):
+        """Mutates muscle tissue voxels according to some probability in each layer
+        """
+        tree = ET.ElementTree(file=self.pop_path + str(indiv) + self.suffix_vox) #file="./population/" + dna_file
+        root = tree.getroot()
+        layers = root.find('VXC').find('Structure').find('Data').findall('Layer')
+
+        """Calculates probability based on amount of fat tissue
+        """
+        dna = ""
+        for layer in layers:
+            dna += str(layer.text).strip()
+        count_soft = dna.count('1')
+        probability = (count_soft / 1000) * 0.5 # or 0.0005 * count_soft
+
+
+        dna_list = ""
+        for layer in layers:
+            dna_list = list(layer.text.strip())
+            position_to_check = 0
+            for index in range(len(dna_list)):
+                tissue = dna_list[index]
+                if tissue == '3' or tissue == '4':
+                    if random.random() <= probability:
+                        dna_list[index] = '2'
+                        print "Atrophied a muscle at index " + str(index) + " to " + str(dna_list[index]) + "."
+                    else:
+                        print "Muscle at index " + str(index) + " unchanged."
+                        pass
+
+                else:
+                    continue
+
+            layer.text = self.concat(dna_list)
+            tree.write(self.pop_path + str(indiv) + self.suffix_vox)
 
     def runHN(self, indiv, hn_params):
         """ run hyperneat with its parameters
