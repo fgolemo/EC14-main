@@ -169,6 +169,7 @@ class HNWorker(threading.Thread):
                 shutil.copy2(self.hn_path + str(indiv) + self.suffix_vox, self.pl_path + str(indiv) + self.suffix_vox)
                 shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
                 self.calculateLifetime(indiv)
+                self.atrophyMuscles(indiv)
                 #TODO self.db.calculatedLifetime(indiv)
             if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_genome)):
                 shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
