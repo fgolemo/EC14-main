@@ -212,12 +212,6 @@ class HNWorker(threading.Thread):
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)
         tree.write(self.pop_path + str(indiv) + self.suffix_vox)
         
-    def concat(self, args):
-        string = ""
-        for each in args:
-            string += str(each)
-        return string
-        
     def atrophyMuscles(self,indiv):
         """Mutates muscle tissue voxels according to some probability in each layer
         """
@@ -251,7 +245,7 @@ class HNWorker(threading.Thread):
                 else:
                     continue
 
-            layer.text = self.concat(dna_list)
+            layer.text = "".join(dna_list)
             tree.write(self.pop_path + str(indiv) + self.suffix_vox)
 
     def runHN(self, indiv, hn_params):
