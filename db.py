@@ -16,7 +16,7 @@ class DB():
     maxQueries = 1
     currentQueries = 0
     connectionString = ""
-    n_random_indivs = 500;
+    n_random_indivs = 500
 
     def connect(self):
         if (self.cur):
@@ -395,14 +395,15 @@ class DB():
         return result
 
     def getRandomMate(self, indiv_id):
-        querySting1 = "SELECT MAX(id) AS rid FROM " + self.tablePrefix + "_mates;"
-        querySting2 = "SELECT * FROM " + self.tablePrefix + "_mates WHERE id = {rid};"
+        querySting1 = "SELECT MAX(line) AS rid FROM " + self.tablePrefix + "_mates;"
+        querySting2 = "SELECT * FROM " + self.tablePrefix + "_mates WHERE line = {rid};"
         self.cur.execute(querySting1)
         result = self.cur.fetchall()
         if (result[0]["rid"] == None):
             return self.mateRandomly(indiv_id)
-        rid = str(int(result[0]["rid"]))
+        rid = int(result[0]["rid"])
         rid = random.randint(max(1, rid-self.n_random_indivs), rid)
+        print "DB: random mate: "+str(rid)
         self.cur.execute(querySting2.format(rid=rid))
         result = self.cur.fetchall()
         result = result[0]
@@ -414,7 +415,7 @@ class DB():
         indiv_id = not_indiv_id
         self.cur.execute(querySting1)
         result = self.cur.fetchall()
-        max_indiv_id = str(int(result[0]["max_indiv_id"]))
+        max_indiv_id = int(result[0]["max_indiv_id"])
 
         while not_indiv_id == indiv_id:
             if indiv_id == 1: #only the first individual has been created

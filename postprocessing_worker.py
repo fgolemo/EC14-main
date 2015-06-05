@@ -355,7 +355,7 @@ class PostprocessingWorker(threading.Thread):
             if mates != [None]: # this happens only if self.pick_from_pool is True and if no mate was found
                 babies += self.matesToBabies(id, mates)
             else:
-                randomMate = self.db.getRandomMate()
+                randomMate = self.db.getRandomMate(id)
                 babies += self.matesToBabies(randomMate["id"], [randomMate])
         return babies
 
