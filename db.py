@@ -16,6 +16,7 @@ class DB():
     maxQueries = 1
     currentQueries = 0
     connectionString = ""
+    n_random_indivs = 500;
 
     def connect(self):
         if (self.cur):
@@ -393,16 +394,58 @@ class DB():
         result = self.cur.fetchall()
         return result
 
-    def getRandomMate(self):
-        querySting1 = "SELECT FLOOR( MAX(id) * RAND()) AS rid FROM " + self.tablePrefix + "_mates;"
+    def getRandomMate(self, indiv_id):
+        querySting1 = "SELECT MAX(id) AS rid FROM " + self.tablePrefix + "_mates;"
         querySting2 = "SELECT * FROM " + self.tablePrefix + "_mates WHERE id = {rid};"
         self.cur.execute(querySting1)
         result = self.cur.fetchall()
+        if (result[0]["rid"] == None):
+            return self.mateRandomly(indiv_id)
         rid = str(int(result[0]["rid"]))
+        rid = random.randint(max(1, rid-self.n_random_indivs), rid)
         self.cur.execute(querySting2.format(rid=rid))
         result = self.cur.fetchall()
         result = result[0]
         return result
+
+    def getRandomIndiv(self, not_indiv_id):
+        querySting1 = "SELECT MAX(id) AS max_indiv_id FROM " + self.tablePrefix + "_individuals;"
+        querySting2 = "SELECT * FROM " + self.tablePrefix + "_individuals WHERE id = {indiv_id};"
+        indiv_id = not_indiv_id
+        self.cur.execute(querySting1)
+        result = self.cur.fetchall()
+        max_indiv_id = str(int(result[0]["max_indiv_id"]))
+
+        while not_indiv_id == indiv_id:
+            if indiv_id == 1: #only the first individual has been created
+                break
+            indiv_id = random.randint(max(1, max_indiv_id-self.n_random_indivs), max_indiv_id)
+
+        self.cur.execute(querySting2.format(indiv_id=indiv_id))
+        result = self.cur.fetchall()
+        result = result[0]
+        return result
+
+    def mateRandomly(self, indiv_id):
+        lastTrace = self.getLastTrace(indiv_id)
+        random_indiv_a = self.getRandomIndiv(indiv_id)
+        random_indiv_b = self.getRandomIndiv(indiv_id)
+        pseudo_mate = {"line": 0,
+                       "id": 0,
+                       "indiv_id": random_indiv_a["id"],
+                       "ltime": lastTrace["ltime"],
+                       "x": 0,
+                       "y": 0,
+                       "z": 0,
+                       "mate_id": 0,
+                       "mate_indiv_id": random_indiv_b["id"],
+                       "mate_ltime": lastTrace["ltime"],
+                       "mate_x": 0,
+                       "mate_y": 0,
+                       "mate_z": 0,
+                       "fertile": 1}
+
+        return pseudo_mate
 
     def findMate(self, id, timeTolerance=0.0, spaceTolerance=0.01, startTrace=0, single=False):
         # self.currentQueries += 1
