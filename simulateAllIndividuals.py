@@ -8,7 +8,7 @@ from EC14skeleton import Skeletor
 class IndivSimulater(Skeletor):
 
     def __init__(self):
-        Skeletor.__init__(self)
+        Skeletor.__init__(self, False)
         self.individual = "0"
         self.simPath = ""
         self.traces_after_vox_path = "traces_afterVox/"
@@ -55,9 +55,14 @@ class IndivSimulater(Skeletor):
         if not os.path.exists(self.logs_path):
             os.makedirs(self.logs_path)
         outQueue = []
-        for file in os.listdir(self.pop_path):
+        files = os.listdir(self.pop_path)
+        files.sort()
+        for file in files:
             if file.endswith(".vxa"):
                 fileSplit = file.split("_")
+                fileTrace = self.traces_after_vox_path + fileSplit[0] + ".trace"
+                if os.path.isfile(fileTrace) and os.path.getsize(fileTrace) > 0:
+                    continue
                 outQueue.append(fileSplit[0])
                 if (len(outQueue) == 12):
                     print "submitting:"

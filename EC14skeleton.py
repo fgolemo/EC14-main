@@ -6,6 +6,7 @@ from db import DB
 
 
 class Skeletor():
+    withDB = True
     base_path = ""
     db = None
     dbParams = None
@@ -14,8 +15,9 @@ class Skeletor():
     dbString = ""
     path_prefix = ""
 
-    def __init__(self):
+    def __init__(self, withDB = True):
         self.config = ConfigParser.RawConfigParser()
+        self.withDB = withDB
 
     def getDB(self):
         """ retrieve database string from config or cache
@@ -33,7 +35,8 @@ class Skeletor():
 
     def initialize(self):
         self.readConfig(self.configPath)
-        self.getDB()
+        if self.withDB:
+            self.getDB()
 
     def handleParams(self):
         if len(sys.argv) != 2:
