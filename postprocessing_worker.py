@@ -96,48 +96,6 @@ class PostprocessingWorker(threading.Thread):
 
         self.stopRequest = threading.Event()
 
-    def compareQueue(self, item1, item2):
-        id1 = int(self.getIDfromTrace(item1))
-        id2 = int(self.getIDfromTrace(item2))
-        if (id1 < id2):
-            return -1
-        elif (id1 > id2):
-            return 1
-        else:
-            return 0
-
-    def gotSave(self):
-        self.pickle_prefix = self.base_path + self.saves_path
-        self.got_save = self.pickleExists("queue_partition")
-        return self.got_save
-
-    def pickleExists(self, name):
-        return os.path.isfile(self.pickle_prefix + name + ".pickle")
-
-    def unpickle(self, name, defaultValue = None):
-        if self.pickleExists(name):
-            try:
-                val = pickle.load(open(self.pickle_prefix + name + ".pickle", "rb"))
-                return val
-            except (EOFError, ValueError, TypeError, MemoryError, pickle.UnpicklingError), e:
-                print ("PP: there was an error loading a pickle file: "+self.pickle_prefix + name + ".pickle")
-                print ("PP: hence I will delete it")
-                os.remove(self.pickle_prefix + name + ".pickle")
-                return defaultValue
-        else:
-            return defaultValue
-
-    def pickle(self, pickles):
-        for var, name in pickles:
-            pickle.dump(var, open(self.pickle_prefix + name + ".pickle.tmp", "wb"))
-
-        for var, name in pickles:
-            os.rename(self.pickle_prefix + name + ".pickle.tmp", self.pickle_prefix + name + ".pickle")
-
-    def clearPickles(self):
-        shutil.rmtree(self.pickle_prefix)
-        os.makedirs(self.pickle_prefix)
-
     def run(self):
         """ main thread function
         :return: None
@@ -148,37 +106,23 @@ class PostprocessingWorker(threading.Thread):
         obs_path = os.path.normpath(self.base_path + self.traces_path)
 
         while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
-            # if (self.gotSave()):
-            #     queue_partition = self.unpickle("queue_partition")
-            #     babies = self.calculateOffspring(queue_partition)
-            #     if self.one_child:
-            #         self.makeBabies(babies)
-            #     self.moveFilesToFinal(queue_partition)
-            #     self.markAsPostprocessed(queue_partition)
-            #     waitCounter = 0
-            #     self.clearPickles()
-            # else:
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
-                self.queue = sorted(self.queue, cmp=self.compareQueue)
-                queue_partition = self.queue[:self.queue_length]
-                self.queue = self.queue[self.queue_length:]
-                if (self.debug):
-                    print("PP: found " + str(len(queue_partition)) + " todo(s)")
-                self.markAsVoxelyzed(queue_partition)
-                self.moveFilesToTmp(queue_partition)
-                self.adjustTraceFile(queue_partition)
-                self.traceToDatabase(queue_partition)
-                # self.pickle([(queue_partition, "queue_partition")])
-                babies = self.calculateOffspring2(queue_partition)
+                self.queue = sorted(self.queue, key=self.getIDfromTrace)
+                item = self.queue[0]
+                self.queue = self.queue[1:]
+                if self.debug:
+                    print "PP: working on id", item
+                self.markAsVoxelyzed(item)
+                self.moveFilesToTmp(item)
+                self.adjustTraceFile(item)
+                self.traceToDatabase(item)
+                babies = self.calculateOffspring(item)
                 self.makeBabies(babies)
-                # if self.one_child:
-                #     self.makeBabies(babies)
-                self.moveFilesToFinal(queue_partition)
-                self.markAsPostprocessed(queue_partition)
+                self.moveFilesToFinal(item)
+                self.markAsPostprocessed(item)
                 waitCounter = 0
-                # self.clearPickles()
             else:
                 if (self.debug):
                     print("PP: found nothing")
@@ -219,75 +163,71 @@ class PostprocessingWorker(threading.Thread):
             if todo not in self.queue:
                 self.addFile(todo)
 
-    def markAsVoxelyzed(self, todos):
+    def markAsVoxelyzed(self, todo):
         """ mark all the individuals as voxelyzed, i.e. as successfully processed by Voxelyze
         :param todos: list of strings with trace file paths
         :return: None
         """
-        for todo in todos:
-            id = self.getIDfromTrace(todo)
-            self.db.markAsVoxelyzed(id)
-            self.db.setJobDone(id)
+        id = self.getIDfromTrace(todo)
+        self.db.markAsVoxelyzed(id)
+        self.db.setJobDone(id)
 
-    def markAsPostprocessed(self, todos):
+    def markAsPostprocessed(self, todo):
         """ mark all the individuals as postprocessed, i.e. all offspring has been calculated, files have been moved and the individuals are basically done
         :param todos: list of strings with trace file paths
         :return: None
         """
-        for todo in todos:
-            id = self.getIDfromTrace(todo)
-            self.db.markAsPostprocessed(id)
-            self.db.setFinalTime(id)
+        id = self.getIDfromTrace(todo)
+        self.db.markAsPostprocessed(id)
+        self.db.setFinalTime(id)
 
-    def adjustTraceFile(self, todos):
+    def adjustTraceFile(self, todo):
         """ put the individuals into an arena, correct their coordinates, etc.
         :param todos: list of strings with the individual trace filepaths
         :return: None
         """
 
-        for todo in todos:
-            id = self.getIDfromTrace(todo)
-            # get initial coordinates from DB
-            indiv = self.db.getIndividual(id)
-            first_trace = self.db.getFirstTrace(id)
-            self.pp.addStartingPointArenaAndTime(self.getPathDuringPP(id),
-                                                 self.vox_preamble,
-                                                 self.arena_x,
-                                                 self.arena_y,
-                                                 self.arena_type,
-                                                 first_trace["x"],
-                                                 first_trace["y"],
-                                                 indiv["born"],
-                                                 self.end_time,
-                                                 self.timestep)
+        id = self.getIDfromTrace(todo)
+        # get initial coordinates from DB
+        indiv = self.db.getIndividual(id)
+        first_trace = self.db.getFirstTrace(id)
+        self.pp.addStartingPointArenaAndTime(self.getPathDuringPP(id),
+                                             self.vox_preamble,
+                                             self.arena_x,
+                                             self.arena_y,
+                                             self.arena_type,
+                                             first_trace["x"],
+                                             first_trace["y"],
+                                             indiv["born"],
+                                             self.end_time,
+                                             self.timestep)
 
-    def traceToDatabase(self, todos):
+    def traceToDatabase(self, todo):
         """ put the individuals into the database
         :param todos: list of strings with the individual trace filepaths
         :return: None
         """
 
-        for todo in todos:
-            id = self.getIDfromTrace(todo)
-            with open(self.getPathDuringPP(id), 'r') as inputFile:
-                traces = []
+        id = self.getIDfromTrace(todo)
+        with open(self.getPathDuringPP(id), 'r') as inputFile:
+            traces = []
 
-                fileAsList = inputFile.readlines()
-                fileLen = len(fileAsList)
-                for i in range(0, fileLen):
-                    fertile = 1
-                    if (self.infertile_birth):
-                        if (i <= self.infertile_birth_percent * fileLen):
-                            fertile = 0
-                    traceLine = fileAsList[i].split()
-                    traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4], fertile])
-            if (len(traces) == 0):
-                print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(
-                    len=len(traces), indiv=id))
-            else:
-                if (self.debug):
-                    print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
-                self.db.addTraces(id, traces)
+            fileAsList = inputFile.readlines()
+            fileLen = len(fileAsList)
+            for i in range(0, fileLen):
+                fertile = 1
+                if (self.infertile_birth):
+                    if (i <= self.infertile_birth_percent * fileLen):
+                        fertile = 0
+                traceLine = fileAsList[i].split()
+                traces.append([id, traceLine[1], traceLine[2], traceLine[3], traceLine[4], fertile])
+        if (len(traces) == 0):
+            print("PP-WARNING: individual {indiv} has 0 traces, so skipping... please check this though!".format(
+                len=len(traces), indiv=id))
+        else:
+            if (self.debug):
+                print("PP: adding {len} traces for individual {indiv} to DB".format(len=len(traces), indiv=id))
+            self.db.addTraces(id, traces)
 
     def getPotentialBirthplace(self, parent1, parent2):
         x = (parent1["x"] + parent2["x"]) / 2
@@ -323,10 +263,10 @@ class PostprocessingWorker(threading.Thread):
                 mate["mate_y"] = lastTrace["y"]
                 mate["mate_z"] = lastTrace["z"]
             else:
-                return [None]
+                return None
         return [mate]
 
-    def calculateOffspring2(self, todos):
+    def calculateOffspring(self, todo):
         """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
         :param todos: list of strings with the individual IDs
         :return: list of babies to make
@@ -334,29 +274,28 @@ class PostprocessingWorker(threading.Thread):
 
         babies = []
 
-        for todo in todos:
-            if os.path.getsize(todo) == 0:
-                continue
-            id = self.getIDfromTrace(todo)
-            if self.debug:
-                print("PP: looking for mates for individual {indiv}...".format(indiv=id))
-            mates = self.db.getMates(id)
+        if os.path.getsize(todo) == 0:
+            return babies 
+        id = self.getIDfromTrace(todo)
+        if self.debug:
+            print("PP: looking for mates for individual {indiv}...".format(indiv=id))
+        mates = self.db.getMates(id)
 
-            # population cap is exclusive - if it is on, no other control works
-            if self.population_cap:
-                mates = self.filterPopulationCap(id, mates)
-            else:
-                if self.indiv_infertile:
-                    mates = self.filterGlobalInfertility(id, mates)
-                if self.one_child:
-                    mates = self.filterIncestControl(id, mates)
-                if self.area_birthcontrol:
-                    mates = self.filterAreaBirthControl(id, mates)
-            if mates != [None]: # this happens only if self.pick_from_pool is True and if no mate was found
-                babies += self.matesToBabies(id, mates)
-            else:
-                randomMate = self.db.getRandomMate(id)
-                babies += self.matesToBabies(randomMate["id"], [randomMate])
+        # population cap is exclusive - if it is on, no other control works
+        if self.population_cap:
+            mates = self.filterPopulationCap(id, mates)
+        else:
+            if self.indiv_infertile:
+                mates = self.filterGlobalInfertility(id, mates)
+            if self.one_child:
+                mates = self.filterIncestControl(id, mates)
+            if self.area_birthcontrol:
+                mates = self.filterAreaBirthControl(id, mates)
+        if mates == None: # this happens only if self.pick_from_pool is True and if no mate was found
+            babies += self.matesToBabies(id, mates)
+        else:
+            randomMate = self.db.getRandomMate(id)
+            babies += self.matesToBabies(randomMate["id"], [randomMate])
         return babies
 
     def matesToBabies(self, id, mates):
@@ -372,95 +311,6 @@ class PostprocessingWorker(threading.Thread):
             babies.append([mate, parent2, mate["ltime"]])
         return babies
 
-
-    def calculateOffspring(self, todos):
-        """ yeah, well... generate offspring, calculate where the new individuals met friends on the way
-        :param todos: list of strings with the individual IDs
-        :return: None
-        """
-        babies = []
-        if (self.got_save):
-            babies = self.unpickle("babies", babies)
-        else:
-            self.pickle([(babies,"babies")])
-
-        for todo in todos:
-            if (os.path.getsize(todo) == 0):
-                continue
-            id = self.getIDfromTrace(todo)
-            if (self.debug):
-                print("PP: looking for mates for individual {indiv}...".format(indiv=id))
-
-            if (self.got_save):
-                mates = self.unpickle("mates")
-                if mates == None:
-                    continue
-                i = self.unpickle("i", 0)
-                positive_mates = self.unpickle("positive_mates", [])
-            else:
-                mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, 0, self.one_child)
-                i = 0
-                positive_mates = []
-                self.pickle([(mates, "mates"), (i, "i"), (positive_mates, "positive_mates")])
-
-            while (len(mates) != 0):
-                mate = mates[0]
-                parent2 = {}
-                parent2["id"] = mate["mate_id"]
-                parent2["indiv_id"] = mate["mate_indiv_id"]
-                parent2["ltime"] = mate["mate_ltime"]
-                parent2["x"] = mate["mate_x"]
-                parent2["y"] = mate["mate_y"]
-                parent2["z"] = mate["mate_z"]
-
-                abcOkay = True  # if the area birth control is okay with the mating
-                if (self.area_birthcontrol):
-                    if (self.debug):
-                        print("PP: birth control is activated, checking vicinity for other bots")
-                    birthCoords = self.getPotentialBirthplace(mate, parent2)
-                    otherBotsInArea = self.db.getOtherBotsInArea(mate["ltime"], birthCoords[0], birthCoords[1],
-                                                                 self.area_birthcontrol_radius)
-                    if (self.debug):
-                        print("PP: found {bots} other bots at the potential birth place".format(bots=otherBotsInArea))
-                    if (otherBotsInArea > self.area_birthcontrol_cutoff):
-                        abcOkay = False
-                        if (self.debug):
-                            print("PP: CANNOT ALLOW MATING IN THIS AREA. Too many other bots.")
-
-                if not abcOkay or (self.one_child and (mate["mate_indiv_id"] in positive_mates or
-                                           self.db.haveMatedBefore(mate, parent2) or
-                                           self.db.isParentOf(id, parent2["indiv_id"])) ):
-                    pass # don't create a mate with this partner.
-                else:
-                    i += 1
-                    self.pickle([(i, "i")])
-                    if (self.debug):
-                        print("PP: found mate ({mate}) for individual {indiv} at {time}s".format(
-                            len=i, indiv=id, mate=mate["mate_indiv_id"], time=mate["mate_ltime"]))
-                    if not self.one_child:
-                        self.db.makeBaby(mate, parent2, mate["ltime"], self.one_child,
-                                         self.indiv_max_age * self.indiv_infertile_span,
-                                         self.arena_x, self.arena_y, self.random_birth_place)
-                    else:
-                        positive_mates.append(mate["mate_indiv_id"])
-                        babies.append([mate, parent2, mate["ltime"]])
-                        self.pickle([(positive_mates, "positive_mates"), (babies, "babies")])
-
-                newStart = mate["id"]
-                if self.one_child and self.debug:
-                    print("PP: looking for more mates for individual {indiv}...".format(indiv=id))
-
-                if self.one_child:
-                    mates.pop(0)
-                else:
-                    mates = self.db.findMate(id, self.timeTolerance, self.spaceTolerance, newStart, self.one_child)
-                self.pickle([(mates, "mates")])
-
-            if (self.debug):
-                print("PP: found {len} mating occurances for individual {indiv}".format(len=i, indiv=id))
-        self.db.flush()
-        return babies
-
     def makeBabies(self, babies):
         for baby in babies:
             self.db.makeBaby(baby[0], baby[1], baby[2], self.one_child,
@@ -470,28 +320,26 @@ class PostprocessingWorker(threading.Thread):
     def getPathDuringPP(self, id):
         return self.base_path + self.traces_during_pp_path + str(id) + ".trace"
 
-    def moveFilesToTmp(self, todos):
+    def moveFilesToTmp(self, indiv):
         """ once all preprocessing is done, move the files to their target destination
         :param todos: list of strings with the individual IDs
         :return: None
         """
-        for indiv in todos:
-            id = self.getIDfromTrace(indiv)
-            shutil.copy2(indiv, self.base_path + self.traces_backup_path + str(id) + ".trace")
-            shutil.copy2(indiv, self.getPathDuringPP(id))
+        id = self.getIDfromTrace(indiv)
+        shutil.copy2(indiv, self.base_path + self.traces_backup_path + str(id) + ".trace")
+        shutil.copy2(indiv, self.getPathDuringPP(id))
 
-    def moveFilesToFinal(self, todos):
+    def moveFilesToFinal(self, indiv):
         """ once all preprocessing is done, move the files to their target destination
         :param todos: list of strings with the individual IDs
         :return: None
         """
-        for indiv in todos:
-            id = self.getIDfromTrace(indiv)
-            if os.path.isfile(self.getPathDuringPP(id)):
-                shutil.move(self.getPathDuringPP(id),
-                            self.base_path + self.traces_after_pp_path + str(id) + ".trace")
-            if os.path.isfile(indiv):
-                os.remove(indiv)
+        id = self.getIDfromTrace(indiv)
+        if os.path.isfile(self.getPathDuringPP(id)):
+            shutil.move(self.getPathDuringPP(id),
+                        self.base_path + self.traces_after_pp_path + str(id) + ".trace")
+        if os.path.isfile(indiv):
+            os.remove(indiv)
 
     def addFile(self, path):
         self.queue.append(path)
