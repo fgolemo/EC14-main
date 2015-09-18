@@ -5,6 +5,7 @@ import threading, time, os
 from db import DB
 from preprocessing import Preprocessor
 import cPickle as pickle
+import math
 
 
 class PostprocessingWorker(threading.Thread):
@@ -109,7 +110,7 @@ class PostprocessingWorker(threading.Thread):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
-                self.queue = sorted(self.queue, key=self.getIDfromTrace)
+                self.queue = sorted(self.queue, key=lambda id : int(self.getIDfromTrace(id)))
                 item = self.queue[0]
                 self.queue = self.queue[1:]
                 if self.debug:
@@ -118,6 +119,7 @@ class PostprocessingWorker(threading.Thread):
                 self.moveFilesToTmp(item)
                 self.adjustTraceFile(item)
                 self.traceToDatabase(item)
+                self.findMates(item)
                 babies = self.calculateOffspring(item)
                 self.makeBabies(babies)
                 self.moveFilesToFinal(item)
@@ -129,13 +131,13 @@ class PostprocessingWorker(threading.Thread):
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
-            jobsRunning = self.db.getJobsWaitingCount()
+                jobsRunning = self.db.getJobsWaitingCount()
 
-            if (self.debug):
-                print("PP: {n} jobs currently waiting in LISA queue...".format(n=jobsRunning))
-                print("PP: sleeping now for " + str(self.pause_time) + "s")
+                if (self.debug):
+                    print("PP: {n} jobs currently waiting in LISA queue...".format(n=jobsRunning))
+                    print("PP: sleeping now for " + str(self.pause_time) + "s")
 
-            self.stopRequest.wait(self.pause_time)
+                self.stopRequest.wait(self.pause_time)
 
         print ("PP: got exit signal... cleaning up")
 
@@ -263,7 +265,7 @@ class PostprocessingWorker(threading.Thread):
                 mate["mate_y"] = lastTrace["y"]
                 mate["mate_z"] = lastTrace["z"]
             else:
-                return None
+                return [None]
         return [mate]
 
     def calculateOffspring(self, todo):
@@ -291,12 +293,34 @@ class PostprocessingWorker(threading.Thread):
                 mates = self.filterIncestControl(id, mates)
             if self.area_birthcontrol:
                 mates = self.filterAreaBirthControl(id, mates)
-        if mates == None: # this happens only if self.pick_from_pool is True and if no mate was found
+        if mates != [None]: # this happens only if self.pick_from_pool is True and if no mate was found
             babies += self.matesToBabies(id, mates)
-        else:
-            randomMate = self.db.getRandomMate(id)
-            babies += self.matesToBabies(randomMate["id"], [randomMate])
+        #else:
+            #randomMate = self.db.getRandomMate(id)
+            #babies += self.matesToBabies(randomMate["id"], [randomMate])
         return babies
+
+    def close_in_time(self, t1, t2):
+        return abs(t1['ltime']-t2['ltime']) < self.timeTolerance
+
+    def close_in_space(self, t1, t2):
+        return math.sqrt((t1['x'] - t2['x'])**2 + (t1['y'] - t2['y'])**2) < self.spaceTolerance
+
+    def findMates(self, indiv_path):
+        id = self.getIDfromTrace(indiv_path)
+        traces = self.db.getTraces(id)
+        territory = self.db.getTerritory(id)
+        lifetime = self.db.getLifetime(id)
+        possibleMates = self.db.getPossibleMates(id, territory, lifetime)
+        mates = []
+        for t in traces:
+            for p in possibleMates:
+                if self.close_in_time(t, p) and self.close_in_space(t, p):
+                    if self.debug:
+                        print "PP: Found mates", t['indiv_id'], p['indiv_id'], t['x'], p['x'], t['y'], p['y'], t['ltime'], p['ltime']
+                    mates.append((t,p))
+
+        self.db.insertMates(mates)
 
     def matesToBabies(self, id, mates):
         babies = []
