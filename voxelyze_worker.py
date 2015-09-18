@@ -86,7 +86,7 @@ class VoxWorker(threading.Thread):
             self.stopRequest.wait(self.pause_time)
 
         # TODO: final steps after kill signal
-        print ("Thread: got exist signal... here I can do some last cleanup stuff before quitting")
+        print ("Thread: got exit signal")
 
     def join(self, timeout=None):
         """ function to terminate the thread (softly)
@@ -122,7 +122,7 @@ class VoxWorker(threading.Thread):
         if len(self.queue) >= self.queue_length or forced:
             if self.debug:
                 print ("vox: got " + str(
-                    self.queue_length) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
+                    len(self.queue)) + " individuals in queue. Sending them to the Lisa queue to be voxelyzed")
             self.sendQueue(self.queue[:self.queue_length])
 
             if not forced:
@@ -216,12 +216,9 @@ class VoxWorker(threading.Thread):
         if self.debug:
             print("VOX: sending queue to the job system")
 
-        # write pool file (12 lines, each line is a call to voxelyze) - correction, each line is an indiv ID
         self.createPoolFile(sendList)
-
-        # run submit.sh that qsubs the stuff in the recent pool
         self.runQsub(sendList)
-
+        
         for indiv in sendList:
             self.db.markAsVoxSubmitted(indiv)
 
