@@ -2,6 +2,7 @@ config.ini
 config.exp-*.ini
 sshfs*
 *.swp
+.fuse*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -2,7 +2,7 @@ import subprocess
 import sys
 import os
 import math
-from EC14skeleton import Skeletor
+from skeleton import Skeletor
 
 
 class IndivSimulater(Skeletor):
