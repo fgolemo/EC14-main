@@ -1,7 +1,7 @@
 #!/bin/sh
 module load stopos
 
-voxdir=${PBS_O_HOME}/thesis/voxelyze/voxelyzeMain
+voxdir=${PBS_O_HOME}/EC14-voxelyze/voxelyzeMain
 cd $voxdir
 
 ncores=`sara-get-num-cores`
