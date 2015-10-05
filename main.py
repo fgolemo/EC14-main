@@ -176,7 +176,7 @@ class EC14controller():
 
         signal.signal(signal.SIGINT, self.keyboard_exit)
 
-        while (time.time() - self.time_start < self.wall_time - self.pause_time - 5):
+        while (time.time() - self.time_start < self.wall_time - self.pause_time - 30):
             unfinished = self.db.getUnfinishedIndividuals()
             if unfinished == 0:
                 print("nothing left to do, quiting")
@@ -185,7 +185,7 @@ class EC14controller():
                 self.clean_exit()
             time.sleep(self.pause_time)
 
-        self.resubmit()
+        #self.resubmit()
 
     def resubmit(self):
         logPrefix = "main.run{n}".format(n=self.run + 1)

@@ -541,10 +541,10 @@ class DB():
 
     def insertMates(self, mates):
         query = "INSERT INTO " + self.tablePrefix + "_mates" + \
-            "(id, indiv_id, ltime, x, y, z, mate_id, mate_indiv_id, mate_ltime, mate_x, mate_y, mate_z, fertile) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)"
+            "(id, indiv_id, ltime, x, y, z, mate_id, mate_indiv_id, mate_ltime, mate_x, mate_y, mate_z, fertile) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         transformed = []
         for t, m in mates:
-            event = [ t['id'], t['indiv_id'],  t['ltime'], t['x'], t['y'], t['z'], m['id'],  m['indiv_id'], m['ltime'],  m['x'], m['y'], m['z'] ]
+            event = [ t['id'], t['indiv_id'],  t['ltime'], t['x'], t['y'], t['z'], m['id'],  m['indiv_id'], m['ltime'],  m['x'], m['y'], m['z'], 1]
             transformed.append(event)
 
         self.cur.executemany(query, transformed)

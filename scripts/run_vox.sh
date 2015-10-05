@@ -11,11 +11,13 @@ mkdir "$TMPDIR"/vox
 for ((i=1; i<=ncores; i++)) ; do
 (
     stopos next -p ${pool}
-    if [ "$STOPOS_RC" != "OK" ]; then # Parameter pool exhausted: we're done
+    if [ "$STOPOS_RC" != "OK" ]; then # Parameter pool exhausted: were done
+        echo 'No next. breaking.'
         break
     fi
     ./voxelyze -f ${population}${STOPOS_VALUE}_vox.vxa -p 100 > "$TMPDIR"/vox/${STOPOS_VALUE}.trace
     mv "$TMPDIR"/vox/${STOPOS_VALUE}.trace ${traces}afterVox/${STOPOS_VALUE}.trace
+
     echo "trace ${STOPOS_VALUE} done"
     stopos remove -p ${pool}
 ) &

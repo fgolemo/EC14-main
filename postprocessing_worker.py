@@ -106,10 +106,11 @@ class PostprocessingWorker(threading.Thread):
 
         obs_path = os.path.normpath(self.base_path + self.traces_path)
 
-        while (not self.stopRequest.isSet() and waitCounter < self.max_waiting_time):
+        while not self.stopRequest.isSet(): # and waitCounter < self.max_waiting_time):
             self.dirCheck(obs_path)
 
             if (len(self.queue) > 0):
+                print 'PP:',map(self.getIDfromTrace,self.queue)
                 self.queue = sorted(self.queue, key=lambda id : int(self.getIDfromTrace(id)))
                 item = self.queue[0]
                 self.queue = self.queue[1:]
@@ -160,7 +161,7 @@ class PostprocessingWorker(threading.Thread):
         """ upon start check if there are files in the target diretory, because the watcher only notices files being moved there while running
         :return: None
         """
-        unprocessed = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        unprocessed = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) and f.endswith('.trace')]
         for todo in unprocessed:
             if todo not in self.queue:
                 self.addFile(todo)
@@ -276,7 +277,7 @@ class PostprocessingWorker(threading.Thread):
 
         babies = []
 
-        if os.path.getsize(todo) == 0:
+        if (not os.path.exists(todo)) or os.path.getsize(todo) == 0:
             return babies 
         id = self.getIDfromTrace(todo)
         if self.debug:
@@ -295,31 +296,31 @@ class PostprocessingWorker(threading.Thread):
                 mates = self.filterAreaBirthControl(id, mates)
         if mates != [None]: # this happens only if self.pick_from_pool is True and if no mate was found
             babies += self.matesToBabies(id, mates)
-        #else:
-            #randomMate = self.db.getRandomMate(id)
-            #babies += self.matesToBabies(randomMate["id"], [randomMate])
+        else:
+            randomMate = self.db.getRandomMate(id)
+            babies += self.matesToBabies(randomMate["id"], [randomMate])
         return babies
 
     def close_in_time(self, t1, t2):
-        return abs(t1['ltime']-t2['ltime']) < self.timeTolerance
+        return abs(t1['ltime']-t2['ltime']) <= self.timeTolerance
 
     def close_in_space(self, t1, t2):
-        return math.sqrt((t1['x'] - t2['x'])**2 + (t1['y'] - t2['y'])**2) < self.spaceTolerance
+        return math.sqrt((t1['x'] - t2['x'])**2 + (t1['y'] - t2['y'])**2) <= self.spaceTolerance
 
     def findMates(self, indiv_path):
         id = self.getIDfromTrace(indiv_path)
         traces = self.db.getTraces(id)
         territory = self.db.getTerritory(id)
         lifetime = self.db.getLifetime(id)
+        if not all(territory.values()) or not all(lifetime.values()):
+            return
         possibleMates = self.db.getPossibleMates(id, territory, lifetime)
         mates = []
         for t in traces:
             for p in possibleMates:
                 if self.close_in_time(t, p) and self.close_in_space(t, p):
-                    if self.debug:
-                        print "PP: Found mates", t['indiv_id'], p['indiv_id'], t['x'], p['x'], t['y'], p['y'], t['ltime'], p['ltime']
                     mates.append((t,p))
-
+        print 'PP: found', len(mates), 'possible mates for individual', id
         self.db.insertMates(mates)
 
     def matesToBabies(self, id, mates):
@@ -350,8 +351,11 @@ class PostprocessingWorker(threading.Thread):
         :return: None
         """
         id = self.getIDfromTrace(indiv)
-        shutil.copy2(indiv, self.base_path + self.traces_backup_path + str(id) + ".trace")
-        shutil.copy2(indiv, self.getPathDuringPP(id))
+        try:
+            shutil.copy2(indiv, self.base_path + self.traces_backup_path + str(id) + ".trace")
+            shutil.copy2(indiv, self.getPathDuringPP(id))
+        except:
+            pass
 
     def moveFilesToFinal(self, indiv):
         """ once all preprocessing is done, move the files to their target destination

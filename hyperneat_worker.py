@@ -210,7 +210,10 @@ class HNWorker(threading.Thread):
         lifetime = self.energy_unit * (self.starting_energy - ((count_soft * self.cost_soft) + (count_active * self.cost_muscle)))
 
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)
-        tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+        try:
+            tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+        except:
+            print 'HN (ERROR): Could not write to', self.pop_path + str(indiv) + self.suffix_vox
         
     def atrophyMuscles(self,indiv):
         """Mutates muscle tissue voxels according to some probability in each layer
@@ -246,7 +249,10 @@ class HNWorker(threading.Thread):
                     continue
 
             layer.text = "".join(dna_list)
+        try:
             tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+        except:
+            print 'HN (ERROR): Could not write to', self.pop_path + str(indiv) + self.suffix_vox
 
     def runHN(self, indiv, hn_params):
         """ run hyperneat with its parameters

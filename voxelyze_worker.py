@@ -81,9 +81,10 @@ class VoxWorker(threading.Thread):
                     forced = True
                     waitCounter = 0
             self.processQueue(forced)
-            if self.debug:
-                print("VOX: sleeping now for " + str(self.pause_time) + "s")
-            self.stopRequest.wait(self.pause_time)
+            if not addedSomethingNew:
+                if self.debug:
+                    print("VOX: sleeping now for " + str(self.pause_time) + "s")
+                self.stopRequest.wait(self.pause_time)
 
         # TODO: final steps after kill signal
         print ("Thread: got exit signal")
