@@ -99,9 +99,9 @@ class HNWorker(threading.Thread):
                 waitCounter += time.time() - startTime
                 startTime = time.time()
 
-            if self.debug:
-                print("HN: sleeping now for " + str(self.pause_time) + "s")
-            self.stopRequest.wait(self.pause_time)
+                if self.debug:
+                    print("HN: sleeping now for " + str(self.pause_time) + "s")
+                self.stopRequest.wait(self.pause_time)
 
         print ("Thread: got exit signal... here I can do some last cleanup stuff before quitting")
 
@@ -123,7 +123,7 @@ class HNWorker(threading.Thread):
             print("HN: checking for todos")
 
         todos = self.db.getHNtodos()
-        print (todos)
+        print "HN: Found", len(todos), "todo(s)"
         return todos
 
     def execHN(self, todos):
@@ -210,7 +210,10 @@ class HNWorker(threading.Thread):
         lifetime = self.energy_unit * (self.starting_energy - ((count_soft * self.cost_soft) + (count_active * self.cost_muscle)))
 
         root.find('Simulator').find('StopCondition').find('StopConditionValue').text = str(lifetime)
-        tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+        try:
+            tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+        except:
+            print 'HN (ERROR): Could not write to', self.pop_path + str(indiv) + self.suffix_vox
         
     def atrophyMuscles(self,indiv):
         """Mutates muscle tissue voxels according to some probability in each layer
@@ -237,16 +240,19 @@ class HNWorker(threading.Thread):
                 if tissue == '3' or tissue == '4':
                     if random.random() <= probability:
                         dna_list[index] = '2'
-                        print "Atrophied a muscle at index " + str(index) + " to " + str(dna_list[index]) + "."
+                        #print "Atrophied a muscle at index " + str(index) + " to " + str(dna_list[index]) + "."
                     else:
-                        print "Muscle at index " + str(index) + " unchanged."
+                        #print "Muscle at index " + str(index) + " unchanged."
                         pass
 
                 else:
                     continue
 
             layer.text = "".join(dna_list)
+        try:
             tree.write(self.pop_path + str(indiv) + self.suffix_vox)
+        except:
+            print 'HN (ERROR): Could not write to', self.pop_path + str(indiv) + self.suffix_vox
 
     def runHN(self, indiv, hn_params):
         """ run hyperneat with its parameters

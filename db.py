@@ -65,16 +65,12 @@ class DB():
         self.con.close()
 
     def onlyGetIDs(self, results):
-        out = []
-        for indiv in results:
-            out.append(indiv["id"])
-        return out
+        return [indiv["id"] for indiv in results]
 
     def getHNtodos(self):
         """ retrieve individuals that need to be created (that only exist in the database so far)
         :return: list with strings (individual names)
         """
-        self.flush()
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_individuals AS i " +
                          "WHERE i.hyperneated = 0 AND born < '" + str(self.maxSimTime) + "'")
         results = self.cur.fetchall()
@@ -90,7 +86,6 @@ class DB():
             searchString += " AND i.vox_submitted = 1 AND i.voxelyzed = 0"
         else:
             searchString += " AND i.vox_submitted = 0"
-        self.flush()
         self.cur.execute(searchString)
         results = self.cur.fetchall()
         return self.onlyGetIDs(results)
@@ -99,7 +94,6 @@ class DB():
         """ get parents, if they exist, for a given individual
         :return: list of strings (parent IDs), length of this list is either 0, 1 or 2, for no parents, has been mutated from 1 parent and was created by mating,
         """
-        self.flush()
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_offspring AS o " +
                          "WHERE o.child_id = " + str(indiv))
         result = self.cur.fetchone()
@@ -119,6 +113,7 @@ class DB():
         """
         self.cur.execute(
             "UPDATE " + self.tablePrefix + "_individuals SET hyperneated = 1 WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def markAsVoxelyzed(self, indiv):
         """ marks the individual as been actually processed by Voxelyze
@@ -126,6 +121,7 @@ class DB():
         :return: None
         """
         self.cur.execute("UPDATE " + self.tablePrefix + "_individuals SET voxelyzed = 1 WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def markAsVoxSubmitted(self, indiv):
         """ marks the individual as been submitted to Lisa
@@ -134,6 +130,7 @@ class DB():
         """
         self.cur.execute(
             "UPDATE " + self.tablePrefix + "_individuals SET vox_submitted = 1 WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def unmarkAsVoxSubmitted(self):
         """ re-enable all individuals for resubmission to the cluster by removing the submitted flag
@@ -141,6 +138,16 @@ class DB():
         """
         self.cur.execute(
             "UPDATE " + self.tablePrefix + "_individuals SET vox_submitted = 0 WHERE postprocessed = 0;")
+        self.flush()
+
+    def markAsTraced(self, indiv):
+        """ marks the individual as having the trace file inserted in the database
+        :param indiv: string, ID of an individual
+        :return: None
+        """
+        self.cur.execute(
+            "UPDATE " + self.tablePrefix + "_individuals SET traced = 1 WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def markAsPostprocessed(self, indiv):
         """ marks the individual as successfully mates, trace file moved and corrected
@@ -149,6 +156,7 @@ class DB():
         """
         self.cur.execute(
             "UPDATE " + self.tablePrefix + "_individuals SET postprocessed = 1 WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def setFinalTime(self, indiv):
         """ calculate the total time it took to process this individual
@@ -160,6 +168,7 @@ class DB():
         diff_time = datetime.now() - start_time
         self.cur.execute("UPDATE " + self.tablePrefix + "_individuals SET total_time = " + str(
             self.getTotalSeconds(diff_time)) + " WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def getTotalSeconds(self, timedelta):
         # hack because the total_seconds method only came in python 2.7 and DAS-4 runs 2.6
@@ -172,6 +181,7 @@ class DB():
         """
         self.cur.execute("UPDATE " + self.tablePrefix + "_individuals SET postprocessed = 1, hyperneated = 1, " + \
                          "voxelyzed = 1, vox_submitted =1 WHERE id = " + str(indiv) + ";")
+        self.flush()
 
     def dropTables(self):
         self.cur.execute("SET sql_notes = 0")
@@ -193,6 +203,7 @@ class DB():
                          "vox_submitted TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "voxelyzed TINYINT(1) DEFAULT 0 NOT NULL, " +
                          "postprocessed TINYINT(1) DEFAULT 0 NOT NULL, " +
+                         "traced TINYINT(1) DEFAULT 0 NOT NULL, "
                          "created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
                          "total_time INT, " +
                          "PRIMARY KEY (id) )")
@@ -253,29 +264,12 @@ class DB():
                          "fertile TINYINT(1) DEFAULT 1 NOT NULL, " +
                          "PRIMARY KEY (line), " +
                          "INDEX `individ` (`indiv_id`) )")
-        self.cur.execute("CREATE TRIGGER `" + self.tablePrefix + "_findmates` " +
-                         "BEFORE INSERT ON " + self.tablePrefix + "_traces " +
-                         "FOR EACH ROW " +
-                         "BEGIN " +
-                         "DECLARE next_id INT; " +
-                         "SET next_id = (SELECT AUTO_INCREMENT FROM information_schema.TABLES " +
-                         "WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='" + self.tablePrefix + "_traces'); " +
-                         "SET NEW.id=next_id; " +
-                         "INSERT INTO " + self.tablePrefix + "_mates (line, indiv_id, id, ltime, x, y, z, " +
-                         "mate_indiv_id, mate_id, mate_ltime, mate_x, mate_y, mate_z, fertile) " +
-                         "SELECT null, NEW.indiv_id, NEW.id, NEW.ltime, NEW.x, NEW.y, NEW.z, " +
-                         "t2.indiv_id as mate_indiv_id, t2.id as mate_id, t2.ltime as mate_ltime, " +
-                         "t2.x as mate_x, t2.y as mate_y, t2.z as mate_z, 1 FROM " + self.tablePrefix + "_traces AS t2 " +
-                         "WHERE t2.indiv_id!=NEW.indiv_id AND NEW.ltime = t2.ltime " +
-                         "AND SQRT( POW(NEW.x - t2.x,2) + POW(NEW.y - t2.y,2) ) <= " + str(spaceTolerance) + " " +
-                         "GROUP BY mate_indiv_id; " +
-                         "END;")
         self.cur.execute("SET sql_notes = 1")
         self.flush()
 
     def createIndividual(self, born, x, y):
         self.cur.execute("INSERT INTO " + self.tablePrefix + "_individuals VALUES (NULL, '" + str(
-            born) + "', 0, 0, 0, 0, NULL, NULL);")
+            born) + "', 0, 0, 0, 0, 0, NULL, NULL);")
         individual_id = self.getLastInsertID()
         self.cur.execute(
             "INSERT INTO " + self.tablePrefix + "_firsttraces VALUES (NULL, " + individual_id + ", '" + str(
@@ -294,36 +288,30 @@ class DB():
         self.flush()
 
     def getPopulationTotal(self):
-        self.flush()
         self.cur.execute("SELECT COUNT(id) FROM " + self.tablePrefix + "_individuals")
         result = self.cur.fetchall()
         return result[0]['COUNT(id)']
 
     def getIndividual(self, id):
-        self.flush()
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_individuals AS i WHERE i.id = '" + str(id) + "' ")
         return self.cur.fetchone()
 
     def getTraces(self, id):
-        self.flush()
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_traces AS t WHERE t.indiv_id = '" + str(id) + "' ")
         return self.cur.fetchall()
 
 
     def getFirstTrace(self, id):
-        self.flush()
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_firsttraces AS t WHERE t.indiv_id = '" + str(
             id) + "' ORDER BY t.id ASC LIMIT 1")
         return self.cur.fetchone()
 
     def getLastTrace(self, id):
-        self.flush()
         self.cur.execute("SELECT * FROM " + self.tablePrefix + "_traces AS t WHERE t.indiv_id = '" + str(
             id) + "' ORDER BY t.id DESC LIMIT 1")
         return self.cur.fetchone()
 
     def getUnfinishedIndividuals(self):
-        self.flush()
         self.cur.execute("SELECT COUNT(id) FROM " + self.tablePrefix + "_individuals WHERE postprocessed = 0")
         result = self.cur.fetchall()
         return result[0]['COUNT(id)']
@@ -524,3 +512,40 @@ class DB():
         unvoxed = result[0]['COUNT(id)']
 
         return voxed + unvoxed
+
+    def getTerritory(self, id):
+        query = "SELECT MIN(x), MAX(x), MIN(y), MAX(y) " + \
+                "FROM " + self.tablePrefix + "_traces " + \
+                "WHERE indiv_id = " + id
+        self.cur.execute(query)
+        result = self.cur.fetchone()
+        return result
+
+    def getLifetime(self, id):
+        query = "SELECT MIN(ltime), MAX(ltime) FROM " + self.tablePrefix + "_traces " + \
+                "WHERE indiv_id = " + id
+        self.cur.execute(query)
+        result = self.cur.fetchone()
+        return result
+
+    def getPossibleMates(self, id, territory, lifetime):
+        query = "SELECT * FROM " + self.tablePrefix + "_traces "+ \
+                "WHERE indiv_id != {id} AND " + \
+                "x BETWEEN {min_x} AND {max_x} AND " + \
+                "y BETWEEN {min_y} AND {max_y} AND " + \
+                "ltime BETWEEN {min_t} AND {max_t}"
+        query = query.format(id=id, min_x = territory['MIN(x)'], max_x = territory['MAX(x)'], min_y = territory['MIN(y)'], max_y = territory['MAX(y)'], min_t = lifetime['MIN(ltime)'], max_t = lifetime['MAX(ltime)'])
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+        return result
+
+    def insertMates(self, mates):
+        query = "INSERT INTO " + self.tablePrefix + "_mates" + \
+            "(id, indiv_id, ltime, x, y, z, mate_id, mate_indiv_id, mate_ltime, mate_x, mate_y, mate_z, fertile) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        transformed = []
+        for t, m in mates:
+            event = [ t['id'], t['indiv_id'],  t['ltime'], t['x'], t['y'], t['z'], m['id'],  m['indiv_id'], m['ltime'],  m['x'], m['y'], m['z'], 1]
+            transformed.append(event)
+
+        self.cur.executemany(query, transformed)
+        self.flush()
