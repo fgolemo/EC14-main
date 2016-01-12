@@ -58,7 +58,7 @@ class HNWorker(threading.Thread):
         self.energy_unit = self.config.getfloat('Lifetimes', 'energy_unit')
         self.starting_energy = self.config.getfloat('Lifetimes', 'starting_energy')
 
-        self.mutate = self.config.getbool('Mutation', 'mutate')
+        self.mutate = self.config.getboolean('Mutation', 'mutate')
 
 
     def __init__(self, dbParams, config_path):
