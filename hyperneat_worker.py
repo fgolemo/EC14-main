@@ -30,6 +30,7 @@ class HNWorker(threading.Thread):
     # hn_binary = "python HyperNEATdummy.py"
     debug = False
     db = None
+    mutate = False
 
     def readConfig(self, config_path):
 
@@ -57,7 +58,7 @@ class HNWorker(threading.Thread):
         self.energy_unit = self.config.getfloat('Lifetimes', 'energy_unit')
         self.starting_energy = self.config.getfloat('Lifetimes', 'starting_energy')
 
-        self.mutation_chance = self.config.getfloat('Mutation', 'mutation_chance')
+        self.mutate = self.config.getbool('Mutation', 'mutate')
 
 
     def __init__(self, dbParams, config_path):
@@ -169,7 +170,8 @@ class HNWorker(threading.Thread):
                 shutil.copy2(self.hn_path + str(indiv) + self.suffix_vox, self.pl_path + str(indiv) + self.suffix_vox)
                 shutil.move(self.hn_path + str(indiv) + self.suffix_vox, self.pop_path + str(indiv) + self.suffix_vox)
                 self.calculateLifetime(indiv)
-                self.atrophyMuscles(indiv)
+                if self.mutate:
+                    self.atrophyMuscles(indiv)
                 #TODO self.db.calculatedLifetime(indiv)
             if (os.path.isfile(self.hn_path + str(indiv) + self.suffix_genome)):
                 shutil.copy2(self.hn_path + str(indiv) + self.suffix_genome, self.pop_path + str(indiv) + self.suffix_genome)
